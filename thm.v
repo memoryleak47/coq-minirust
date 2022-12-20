@@ -1,3 +1,4 @@
+(*
 Require Import defs.
 Require Import le.
 Require Import lemma.
@@ -70,3 +71,4 @@ destruct (mk_decode_bool l).
 Qed.
 *)
 Abort.
+*)

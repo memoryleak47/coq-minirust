@@ -1,3 +1,4 @@
+(*
 Require Import defs.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Init.Datatypes.
@@ -36,3 +37,4 @@ Definition le_opt (o1 o2 : option Value) : Prop :=
   end.
 
 
+*)

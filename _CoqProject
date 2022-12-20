@@ -3,3 +3,4 @@ defs.v
 le.v
 lemma.v
 thm.v
+encoding.v

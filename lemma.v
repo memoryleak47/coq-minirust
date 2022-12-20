@@ -1,3 +1,4 @@
+(*
 Require Import defs.
 Require Import le.
 Require Import Coq.Bool.Bool.
@@ -126,3 +127,4 @@ induction l1 as [|b1 l1' H].
 apply H. destruct p as [A B].
 assumption.
 Qed.
+*)
