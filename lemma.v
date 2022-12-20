@@ -6,6 +6,7 @@ Require Import Coq.Init.Byte.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+(* TODO fixup lemmas! *)
 (* <= of vals *)
 
 Inductive LeVal : Value -> Value -> Type :=
@@ -13,9 +14,12 @@ Inductive LeVal : Value -> Value -> Type :=
 
 Lemma mk_le_val (v1 v2 : Value) (p: le_val v1 v2) : LeVal v1 v2.
 Proof.
-destruct v1 as [b1].
-destruct v2 as [b2].
-unfold le_val in p. rewrite p. apply LValEq.
+destruct v1 as [b1|b1]; destruct v2 as [b2|b2];
+unfold le_val in p.
+- rewrite p. apply LValEq.
+- destruct p.
+- destruct p.
+- rewrite p. apply LValEq.
 Qed.
 
 Inductive LeOpt : option Value -> option Value -> Type :=
@@ -55,7 +59,7 @@ Qed.
 
 Inductive LeList : list AbstractByte -> list AbstractByte -> Type :=
   | LEmpty : LeList [] []
-  | LLe b1 b2 l1' l2' : LeList l1' l2' -> LeAbstractByte b1 b2 -> LeList (b1::l1') (b2::l2'). 
+  | LLe b1 b2 l1' l2' : LeList l1' l2' -> LeAbstractByte b1 b2 -> LeList (b1::l1') (b2::l2').
 
 Lemma mk_le_list (l1 : list AbstractByte) : forall l2, le_list l1 l2 -> LeList l1 l2.
 Proof.

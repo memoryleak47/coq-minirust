@@ -9,6 +9,8 @@ Import ListNotations.
 Definition le_val (v1 v2 : Value) : Prop :=
  match (v1, v2) with
   | (BoolVal x, BoolVal y) => x = y
+  | (IntVal x, IntVal y) => x = y
+  | _ => False
  end.
 
 Definition le_abstract_byte (b1 b2 : AbstractByte) : Prop :=
