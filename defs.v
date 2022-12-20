@@ -6,11 +6,18 @@ Require Import List.
 Import ListNotations.
 
 (* provenance *)
-Context `{P : Type}.
+
+Inductive Endianness :=
+ | LittleEndian
+ | BigEndian.
 
 (* in bytes *)
 Definition Size := nat.
 Definition Align := nat.
+
+Context `{P : Type}.
+Context `{ENDIANNESS : Endianness}.
+Context `{PTR_SIZE : Size}.
 
 Definition Int := Z.
 
@@ -44,7 +51,7 @@ Inductive PtrTy : Type :=
 
 Inductive Ty : Type :=
  | TBool : Ty
- | TInt : Size -> Signedness -> Ty
+ | TInt : IntTy -> Ty
  | TPtr : PtrTy -> Ty
  | TTuple : Fields -> Size -> Ty
  | TArray : Ty -> Int -> Ty
