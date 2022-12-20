@@ -7,18 +7,33 @@ Import ListNotations.
 
 Require Import defs.
 
-(* encoding can fail, if ty and val are not compatible. *)
-Definition encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
- match (ty, val) with
-  | (TBool, VBool true) => Some [Init x01 None]
-  | (TBool, VBool false) => Some [Init x00 None]
+(* bool *)
+Definition encode_bool (v: Value) : option (list AbstractByte) :=
+ match v with
+  | VBool true => Some [Init x01 None]
+  | VBool false => Some [Init x00 None]
   | _ => None
  end.
 
-Definition decode (ty : Ty) (bytes : list AbstractByte) : option Value :=
- match (ty, bytes) with
-  | (TBool, [Init x01 _]) => Some (VBool true)
-  | (TBool, [Init x00 _]) => Some (VBool false)
+Definition decode_bool (l: list AbstractByte) : option Value :=
+ match l with
+  | [Init x01 _] => Some (VBool true)
+  | [Init x00 _] => Some (VBool false)
+  | _ => None
+ end.
+
+(* combining encode, decode together: *)
+
+(* encoding can fail, if ty and val are not compatible. *)
+Definition encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
+ match ty with
+  | TBool => encode_bool val
+  | _ => None
+ end.
+
+Definition decode (ty : Ty) (l : list AbstractByte) : option Value :=
+ match ty with
+  | TBool => decode_bool l
   | _ => None
  end.
 
