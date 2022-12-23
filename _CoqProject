@@ -4,3 +4,4 @@ le.v
 lemma.v
 thm.v
 encoding.v
+int_encoding.v

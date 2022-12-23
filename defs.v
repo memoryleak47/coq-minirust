@@ -16,7 +16,6 @@ Definition Size := nat.
 Definition Align := nat.
 
 Context `{P : Type}.
-Context `{ENDIANNESS : Endianness}.
 Context `{PTR_SIZE : Size}.
 
 Definition Int := Z.
@@ -41,7 +40,7 @@ Definition Chunks := list (Size * Size).
 
 Record IntTy := mkIntTy {
   i_size: Size;
-  i_signed: Signedness
+  i_signedness: Signedness
 }.
 
 Inductive PtrTy : Type :=
