@@ -4,3 +4,4 @@
 *.glob
 .*.aux
 .Makefile.d
+.lia.cache
