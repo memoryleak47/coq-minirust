@@ -6,13 +6,7 @@ Require Import List.
 Import ListNotations.
 
 Require Import defs.
-
-(* int *)
-Definition encode_int (int_ty: IntTy) (v: Value) : option (list AbstractByte).
-Admitted.
-
-Definition decode_int (int_ty: IntTy) (l: list AbstractByte) : option Value.
-Admitted.
+Require Import int_encoding.
 
 (* bool *)
 Definition encode_bool (v: Value) : option (list AbstractByte) :=
@@ -34,14 +28,14 @@ Definition decode_bool (l: list AbstractByte) : option Value :=
 (* encoding can fail, if ty and val are not compatible. *)
 Definition encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
  match ty with
-  | TInt int_ty => encode_int int_ty val
+  | TInt size signedness => encode_int size signedness val
   | TBool => encode_bool val
   | _ => None
  end.
 
 Definition decode (ty : Ty) (l : list AbstractByte) : option Value :=
  match ty with
-  | TInt int_ty => decode_int int_ty l
+  | TInt size signedness => decode_int size signedness l
   | TBool => decode_bool l
   | _ => None
  end.

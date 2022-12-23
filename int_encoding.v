@@ -49,9 +49,8 @@ Definition encode_uint_be (size : Size) (i : Int) (p1: (i >= 0)%Z) (p2 : (i < (u
   let bytes := map wrap bytes in
   bytes.
 
-Definition encode_int_be (int_ty : IntTy) (i : Int) : option (list AbstractByte) :=
-  let size := i_size int_ty in
-  match i_signedness int_ty with
+Definition encode_int_be (size: Size) (signedness: Signedness) (i : Int) : option (list AbstractByte) :=
+  match signedness with
    | Unsigned =>
      let stop := unsigned_stop size in
      match mk_interval_result i 0%Z stop (unsigned_stop_pos size) with
@@ -65,18 +64,18 @@ Definition encode_int_be (int_ty : IntTy) (i : Int) : option (list AbstractByte)
 (* TODO cleanup *)
 Definition my_rev (l: list AbstractByte) : list AbstractByte := rev l.
 
-Definition encode_int2 (int_ty : IntTy) (i : Int) : option (list AbstractByte) :=
-  let bytes := (encode_int_be int_ty i) in
+Definition encode_int2 (size: Size) (signedness: Signedness) (i : Int) : option (list AbstractByte) :=
+  let bytes := (encode_int_be size signedness i) in
   match ENDIANNESS with
    | BigEndian => bytes
    | LittleEndian => option_map my_rev bytes
   end.
 
-Definition encode_int (int_ty: IntTy) (v: Value) : option (list AbstractByte) :=
+Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option (list AbstractByte) :=
  match v with
-  | VInt x => encode_int2 int_ty x
+  | VInt x => encode_int2 size signedness x
   | _ => None
  end.
 
-Definition decode_int (int_ty: IntTy) (l: list AbstractByte) : option Value.
+Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value.
 Admitted.
