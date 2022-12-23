@@ -23,6 +23,31 @@ Definition decode_bool (l: list AbstractByte) : option Value :=
   | _ => None
  end.
 
+(* int encoding is defined in int_encoding.v *)
+
+(* ptr *)
+Definition encode_ptr (v: Value) : option (list AbstractByte) :=
+  match v with
+  | VPtr addr opt_p =>
+    let insert_provenance := fun x =>
+      match x with
+      | Init b _ => Init b opt_p
+      | Uninit => Uninit
+      end
+    in
+
+    match encode_int PTR_SIZE Unsigned (VInt addr) with
+    | Some bytes =>
+      let bytes := map insert_provenance bytes in
+      Some bytes
+    | None => None
+    end
+  | _ => None
+  end.
+
+Definition decode_ptr (l: list AbstractByte) : option Value.
+Admitted.
+
 (* combining encode, decode together: *)
 
 (* encoding can fail, if ty and val are not compatible. *)
