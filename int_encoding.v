@@ -10,6 +10,8 @@ Import ListNotations.
 
 Require Import defs.
 
+(* fundamentals *)
+
 Context `{ENDIANNESS : Endianness}.
 
 Definition unsigned_stop (size: Size) : Int :=
@@ -31,10 +33,13 @@ Definition signed_offset (size: Size) : Int :=
   let size := Z.of_nat size in
   (2^(size*8))%Z.
 
+(* encode *)
+
 Definition wrap (ascii: Ascii.ascii) : AbstractByte :=
   let byte := Ascii.byte_of_ascii ascii in
   Init byte None.
 
+(* assumes that i is in range *)
 Definition encode_uint_le (size : Size) (i : Int): list AbstractByte :=
   let n := Z.to_N i in
   let bytes := N2ByteV_sized size n in
@@ -67,7 +72,6 @@ Definition encode_int_le (size: Size) (signedness: Signedness) (i : Int) : optio
     end
   end.
 
-
 Definition encode_int2 (size: Size) (signedness: Signedness) (i : Int) : option (list AbstractByte) :=
   let bytes := (encode_int_le size signedness i) in
   match ENDIANNESS with
@@ -81,5 +85,34 @@ Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option 
   | _ => None
  end.
 
-Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value.
+(* decode *)
+
+Fixpoint unwrap (l: list AbstractByte) : option (list byte) :=
+  match l with
+  | [] => Some []
+  | Uninit::_ => None
+  | (Init x _)::rest => option_map (fun y => x::y) (unwrap rest)
+  end.
+
+Definition decode_uint_le (size: Size) (bytes: list AbstractByte): option Int :=
+  match unwrap bytes with
+   | None => None
+   | Some bytes =>
+     let bytes := map Ascii.ascii_of_byte bytes in
+     let bytes := Vector.of_list bytes in
+     let n := ByteV2N bytes in
+     let n := Z.of_N n in
+     Some n
+  end.
+
+Definition decode_int_le (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Int.
 Admitted.
+
+Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value :=
+  let l := match ENDIANNESS with
+   | BigEndian => rev l
+   | LittleEndian => l
+  end in
+
+  let opt_i := decode_int_le size signedness l in
+  option_map VInt opt_i.
