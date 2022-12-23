@@ -5,6 +5,7 @@ Require Import ZArith.
 Require Import List.
 Require Import Init.Nat.
 Require Import Lia.
+Require Import Ndigits.
 Import ListNotations.
 
 Require Import defs.
@@ -37,7 +38,16 @@ Definition unsigned_stop (size: Size) : Int :=
 Lemma unsigned_stop_pos (size: Size) : (0 < (unsigned_stop size))%Z.
 Proof. unfold unsigned_stop. lia. Qed.
 
-Definition encode_uint_be (size : Size) (i : Int) (p1: (i >= 0)%Z) (p2 : (i < (unsigned_stop size))%Z): option (list AbstractByte). Admitted.
+Definition wrap (ascii: Ascii.ascii) : AbstractByte :=
+  let byte := Ascii.byte_of_ascii ascii in
+  Init byte None.
+
+Definition encode_uint_be (size : Size) (i : Int) (p1: (i >= 0)%Z) (p2 : (i < (unsigned_stop size))%Z): list AbstractByte :=
+  let n := Z.to_N i in
+  let bytes := N2ByteV_sized size n in
+  let bytes := Vector.to_list bytes in
+  let bytes := map wrap bytes in
+  bytes.
 
 Definition encode_int_be (int_ty : IntTy) (i : Int) : option (list AbstractByte) :=
   let size := i_size int_ty in
@@ -46,7 +56,7 @@ Definition encode_int_be (int_ty : IntTy) (i : Int) : option (list AbstractByte)
      let stop := unsigned_stop size in
      match mk_interval_result i 0%Z stop (unsigned_stop_pos size) with
        | IResLower _ _ _ _  => None
-       | IResIn _ _ _ p1 p2 => encode_uint_be size i p1 p2
+       | IResIn _ _ _ p1 p2 => Some (encode_uint_be size i p1 p2)
        | IResHigher _ _ _ _ => None
      end
    | Signed => None (* TODO *)
