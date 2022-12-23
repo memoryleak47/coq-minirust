@@ -12,7 +12,10 @@ Require Import defs.
 
 (* fundamentals *)
 
+
 Context `{ENDIANNESS : Endianness}.
+(* for testing *)
+(* Definition ENDIANNESS := BigEndian. *)
 
 Definition unsigned_stop (size: Size) : Int :=
   let size := Z.of_nat size in
@@ -105,8 +108,22 @@ Definition decode_uint_le (size: Size) (bytes: list AbstractByte): option Int :=
      Some n
   end.
 
-Definition decode_int_le (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Int.
-Admitted.
+Definition decode_int_le (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Int :=
+  match (length l =? size, decode_uint_le size l) with
+  | (false, _) => None
+  | (_, None) => None
+  | (true, Some i) =>
+    match signedness with
+    | Unsigned => Some i
+    | Signed =>
+      let stop := signed_stop size in
+      let offset := signed_offset size in
+      match (i >=? stop)%Z with
+      | true => Some (i - offset)%Z
+      | false => Some i
+      end
+    end
+  end.
 
 Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value :=
   let l := match ENDIANNESS with
@@ -116,3 +133,4 @@ Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByt
 
   let opt_i := decode_int_le size signedness l in
   option_map VInt opt_i.
+
