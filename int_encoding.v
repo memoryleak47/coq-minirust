@@ -16,8 +16,19 @@ Inductive IntervalResult (x start stop : Int): Type :=
  | IResIn : (x >= start)%Z -> (x < stop)%Z -> IntervalResult _ _ _
  | IResHigher : (x >= stop)%Z -> IntervalResult _ _ _.
 
-Definition mk_interval_result (x start stop: Int) : (start < stop)%Z -> IntervalResult x start stop.
-Admitted.
+Lemma mk_interval_result (x start stop: Int) : (start < stop)%Z -> IntervalResult x start stop.
+Proof.
+intros p.
+destruct (x >=? start)%Z eqn:E.
+- assert (x >= start)%Z as A1. { lia. }
+  destruct (x <? stop)%Z eqn:E2.
+-- assert (x < stop)%Z as A2. { lia. }
+   apply (IResIn _ _ _ A1 A2).
+-- assert (x >= stop)%Z as A3. { lia. }
+   apply (IResHigher _ _ _ A3).
+- assert (x < start)%Z as A4. { lia. }
+  apply (IResLower _ _ _ A4).
+Qed.
 
 Definition unsigned_stop (size: Size) : Int :=
   let size := Z.of_nat size in
