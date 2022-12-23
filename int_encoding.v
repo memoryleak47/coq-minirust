@@ -12,26 +12,24 @@ Require Import defs.
 
 Context `{ENDIANNESS : Endianness}.
 
-Inductive IntervalResult : Type :=
- | IResLower : IntervalResult
- | IResIn : IntervalResult
- | IResHigher : IntervalResult.
-
-Definition mk_interval_result (x start stop: Int) : IntervalResult :=
-  match (x >=? start)%Z with
-  | true => match (x <? stop)%Z with
-    | true => IResIn
-    | false => IResHigher
-    end
-  | false => IResLower
-  end.
-
 Definition unsigned_stop (size: Size) : Int :=
   let size := Z.of_nat size in
   (2^(size*8))%Z.
 
-Lemma unsigned_stop_pos (size: Size) : (0 < (unsigned_stop size))%Z.
-Proof. unfold unsigned_stop. lia. Qed.
+Definition signed_start (size: Size) : Int :=
+   let size := Z.of_nat size in
+  (-2^(size*8 - 1))%Z.
+
+(* stop is exclusive! Hence |start| = |stop| *)
+Definition signed_stop (size: Size) : Int :=
+   let size := Z.of_nat size in
+  ((2^(size*8 - 1)))%Z.
+
+(* the value by which a negative signed number is offsetted, to become positive. *)
+(* same value as unsigned_stop *)
+Definition signed_offset (size: Size) : Int :=
+  let size := Z.of_nat size in
+  (2^(size*8))%Z.
 
 Definition wrap (ascii: Ascii.ascii) : AbstractByte :=
   let byte := Ascii.byte_of_ascii ascii in
@@ -48,21 +46,32 @@ Definition encode_int_le (size: Size) (signedness: Signedness) (i : Int) : optio
   match signedness with
    | Unsigned =>
      let stop := unsigned_stop size in
-     match mk_interval_result i 0%Z stop with
-       | IResLower  => None
-       | IResIn => Some (encode_uint_le size i)
-       | IResHigher => None
+     match ((i >=? 0)%Z && (i <? stop)%Z) with
+       | true => Some (encode_uint_le size i)
+       | false => None
      end
-   | Signed => None (* TODO *)
+
+   | Signed =>
+     let start := signed_start size in
+     let stop := signed_stop size in
+     let offset := signed_offset size in
+     match (i >=? 0)%Z with
+      | true => match (i <? stop)%Z with
+        | true => Some (encode_uint_le size i)
+        | false => None
+      end
+      | false => match (i >=? start)%Z with
+        | true => Some (encode_uint_le size (i + offset)%Z)
+        | false => None
+      end
+    end
   end.
 
-(* TODO cleanup *)
-Definition my_rev (l: list AbstractByte) : list AbstractByte := rev l.
 
 Definition encode_int2 (size: Size) (signedness: Signedness) (i : Int) : option (list AbstractByte) :=
   let bytes := (encode_int_le size signedness i) in
   match ENDIANNESS with
-   | BigEndian => option_map my_rev bytes
+   | BigEndian => option_map (fun x => rev x) bytes (* this `fun` seems redundant, but it isn't *)
    | LittleEndian => bytes
   end.
 
