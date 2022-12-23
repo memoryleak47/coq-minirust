@@ -15,14 +15,18 @@ Inductive Endianness :=
 Definition Size := nat.
 Definition Align := nat.
 
-Context `{ENDIANNESS_impl : Endianness}.
-Context `{P_impl : Type}.
-Context `{PTR_SIZE_impl : Size}.
-
 (* This makes the `Context` variables globally accessible. *)
+Context `{ENDIANNESS_impl : Endianness}.
 Definition ENDIANNESS := ENDIANNESS_impl.
+
+Context `{P_impl : Type}.
 Definition P := P_impl.
+
+Context `{PTR_SIZE_impl : Size}.
 Definition PTR_SIZE := PTR_SIZE_impl.
+
+Context `{P_EQ_impl : P -> P -> bool}.
+Definition P_EQ := P_EQ_impl.
 
 Definition Int := Z.
 

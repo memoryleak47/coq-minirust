@@ -45,8 +45,58 @@ Definition encode_ptr (v: Value) : option (list AbstractByte) :=
   | _ => None
   end.
 
-Definition decode_ptr (l: list AbstractByte) : option Value.
-Admitted.
+Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
+  let start_prov :=
+    match l with
+    | [] => None
+    | Uninit::_ => None
+    | (Init _ p)::_ => p
+    end
+  in
+
+  let p_opt_eq := fun x y =>
+    match (x, y) with
+    | (Some a, Some b) => P_EQ a b
+    | (None, None) => true
+    | _ => false
+    end
+  in
+
+  let has_start_prov := fun x =>
+    match x with
+    | Uninit => false
+    | Init _ p => p_opt_eq p start_prov
+    end
+  in
+
+  let prov :=
+    match (forallb has_start_prov l) with
+    | true => start_prov
+    | false => None
+    end
+  in
+
+  let align :=
+    match ptr_ty with
+    | Ref align _ _ => align
+    | Box align _ => align
+    | Raw align _ => align
+    end
+  in
+
+  let align := Z.of_nat align in
+
+  match decode_int PTR_SIZE Unsigned l with
+  | Some (VInt addr) =>
+    let constraints := (addr >? 0)%Z && (addr mod align =? 0)%Z in
+    let ptr := VPtr addr prov in
+    match (ptr_ty, constraints) with
+    | (Raw _ _, _) => Some ptr (* raw ptrs don't need to satisfy the constraints *)
+    | (_, true) => Some ptr
+    | (_, false) => None
+    end
+  | _ => None
+  end.
 
 (* combining encode, decode together: *)
 
