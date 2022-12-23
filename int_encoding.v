@@ -12,11 +12,6 @@ Require Import defs.
 
 (* fundamentals *)
 
-
-Context `{ENDIANNESS : Endianness}.
-(* for testing *)
-(* Definition ENDIANNESS := BigEndian. *)
-
 Definition unsigned_stop (size: Size) : Int :=
   let size := Z.of_nat size in
   (2^(size*8))%Z.
