@@ -112,14 +112,25 @@ Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
     option_map f (transpose rest)
   end.
 
-(* TODO add elem.size() == (subencode _ _).size() check *)
 Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
- match v with
+  let elem_size := ty_size elem in
+  let enc := fun x =>
+    let opt_bytes := subencode elem x in
+    match opt_bytes with
+    | Some bytes =>
+      match (length bytes =? elem_size) with
+      | true => Some bytes
+      | false => None
+      end
+    | None => None
+    end
+  in
+
+  match v with
   | VTuple vals =>
     match (Z.of_nat (length vals) =? count)%Z with
     | true =>
-      let f := fun x => subencode elem x in
-      let opt_bytes := map f vals in
+      let opt_bytes := map enc vals in
       match transpose opt_bytes with
       | Some bytes => Some (concat bytes)
       | None => None
