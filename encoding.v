@@ -156,6 +156,15 @@ Fixpoint write_subslice_at_index {T: Type} (l: list T) (start: nat) (other: list
   | ([],_,_) => []
   end.
 
+Fixpoint chunks_impl {T: Type} (tmp: list T) (chunk_size: nat) (l: list T) : list (list T) :=
+  match (chunk_size =? length tmp,l) with
+  | (_,[]) => [tmp]
+  | (true,x::l') => tmp::(chunks_impl [x] chunk_size l')
+  | (false,x::l') => chunks_impl (tmp ++ [x]) chunk_size l'
+  end.
+
+Definition chunks {T: Type} (l: list T) (chunk_size: nat) := chunks_impl [] chunk_size l.
+
 Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) : option Value.
 Admitted.
 
