@@ -67,3 +67,15 @@ Inductive Value : Type :=
  | VPtr : Address -> option P -> Value
  | VTuple : list Value -> Value
  | VUnion : list (list AbstractByte) -> Value.
+
+Fixpoint ty_size (t: Ty) : Size :=
+  match t with
+  | TBool => 1
+  | TInt s _ => s
+  | TPtr _ => PTR_SIZE
+  | TTuple _ s => s
+  | TArray elem count =>
+    let count := Z.to_nat count in (* TODO should I consider negative count here? *)
+    (ty_size elem) * count
+  | TUnion _ _ s => s
+  end.
