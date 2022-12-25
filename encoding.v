@@ -98,6 +98,40 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
   | _ => None
   end.
 
+(* arrays *)
+
+Definition Encoder := Ty -> Value -> option (list AbstractByte).
+Definition Decoder := Ty -> list AbstractByte -> option (list Value).
+
+Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
+  match l with
+  | [] => Some []
+  | None::_ => None
+  | (Some a)::rest =>
+    let f := fun r => a::r in
+    option_map f (transpose rest)
+  end.
+
+(* TODO add elem.size() == (subencode _ _).size() check *)
+Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
+ match v with
+  | VTuple vals =>
+    match (Z.of_nat (length vals) =? count)%Z with
+    | true =>
+      let f := fun x => subencode elem x in
+      let opt_bytes := map f vals in
+      match transpose opt_bytes with
+      | Some bytes => Some (concat bytes)
+      | None => None
+      end
+    | false => None
+    end
+  | _ => None
+ end.
+
+Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) : option Value.
+Admitted.
+
 (* combining encode, decode together: *)
 
 (* encoding can fail, if ty and val are not compatible. *)
