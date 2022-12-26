@@ -132,6 +132,8 @@ Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder)
   | _ => None
  end.
 
+Definition mk_uninit (size: Size) := map (fun _ => Uninit) (seq 0 size).
+
 Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecoder: Decoder) : option Value :=
   let elem_size := ty_size elem in
   let c := chunks l elem_size in
@@ -156,7 +158,7 @@ Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Enc
     end
   in
 
-  let uninit := map (fun _ => Uninit) (seq 0 size) in
+  let uninit := mk_uninit size in
 
   match v with
   | VTuple vals => f uninit fields vals
@@ -178,7 +180,29 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
   end.
 
 (* unions *)
-Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) := None.
+Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
+  let f := fix f (l: list AbstractByte) (chunks: Chunks) (chunks_data: list (list AbstractByte)) :=
+    match (chunks, chunks_data) with
+    | ((offset, chunk_s)::chunks', y::chunks_data') =>
+      if (chunk_s =? length y) then
+        let l' := write_subslice_at_index l offset y in
+        f l' chunks' chunks_data'
+      else None
+    | (_::_,[]) => None
+    | ([],_::_) => None
+    | ([],[]) => Some l
+    end
+  in
+
+  let uninit := mk_uninit size in
+
+  match v with
+  | VUnion chunks_data =>
+    if (length chunks_data =? length chunks) then
+      f uninit chunks chunks_data
+    else None
+  | _ => None
+  end.
 
 Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value := None.
 
