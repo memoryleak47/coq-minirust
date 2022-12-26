@@ -1,4 +1,3 @@
-(*
 Require Import defs.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Init.Datatypes.
@@ -6,11 +5,23 @@ Require Import Coq.Init.Byte.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+Definition le_ptr (addr: Int) (prov: option P) (addr': Int) (prov': option P) : Prop :=
+  let a := addr = addr' in
+  let b :=
+    match (prov, prov') with
+    | (None, _) => True
+    | (Some p, Some p') => (P_EQ p p') = true
+    | _ => False
+    end
+  in
+
+  a /\ b.
+
 (* less-than or equally defined value *)
 Definition le_val (v1 v2 : Value) : Prop :=
  match (v1, v2) with
-  | (BoolVal x, BoolVal y) => x = y
-  | (IntVal x, IntVal y) => x = y
+  | (VBool x, VBool y) => x = y
+  | (VInt x, VInt y) => x = y
   | _ => False
  end.
 
@@ -35,6 +46,3 @@ Definition le_opt (o1 o2 : option Value) : Prop :=
     | (Some l, Some r) => le_val l r
     | _ => False
   end.
-
-
-*)
