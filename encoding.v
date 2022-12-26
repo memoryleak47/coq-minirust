@@ -177,6 +177,12 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
   | true => option_map VTuple (transpose (map f fields))
   end.
 
+(* unions *)
+Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) := None.
+
+Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value := None.
+
+
 (* combining encode, decode together: *)
 
 (* encoding can fail, if ty and val are not compatible. *)
@@ -187,7 +193,7 @@ Fixpoint encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
   | TPtr ptr_ty => encode_ptr ptr_ty val
   | TTuple fields size => encode_tuple fields size val encode
   | TArray elem count => encode_array elem count val encode
-  | _ => None
+  | TUnion fields chunks size => encode_union fields chunks size val encode
  end.
 
 Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
@@ -197,7 +203,7 @@ Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
   | TPtr ptr_ty => decode_ptr ptr_ty l
   | TTuple fields size => decode_tuple fields size l decode
   | TArray elem count => decode_array elem count l decode
-  | _ => None
+  | TUnion fields chunks size => decode_union fields chunks size l decode
  end.
 
 Definition is_valid_for (ty : Ty) (v : Value) := exists l, decode ty l = Some v.
