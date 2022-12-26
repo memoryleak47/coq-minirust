@@ -175,17 +175,19 @@ Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecod
 (* combining encode, decode together: *)
 
 (* encoding can fail, if ty and val are not compatible. *)
-Definition encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
+Fixpoint encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
  match ty with
   | TInt size signedness => encode_int size signedness val
   | TBool => encode_bool val
+  | TArray elem count => encode_array elem count val encode
   | _ => None
  end.
 
-Definition decode (ty : Ty) (l : list AbstractByte) : option Value :=
+Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
  match ty with
   | TInt size signedness => decode_int size signedness l
   | TBool => decode_bool l
+  | TArray elem count => decode_array elem count l decode
   | _ => None
  end.
 
