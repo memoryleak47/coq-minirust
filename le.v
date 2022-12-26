@@ -19,20 +19,22 @@ Global Instance AbstractByte_DefinedRelation : DefinedRelation AbstractByte := {
     end
 }.
 
-Global Instance list_DefinedRelation (T: Type) {_: DefinedRelation T} : DefinedRelation (list T) := {
-  le x y :=
-    let f := fix f (x y: list T) :=
+Definition le_list (T: Type) (x y : list T) (elem_f: T -> T -> Prop) : Prop :=
+  let f := fix f (x y : list T) :=
     match (x, y) with
-    | (a::l1,b::l2) => (le a b /\ f l1 l2)
-    | ([], []) => True
-    |  _ => False
+    | (a::l1,b::l2) => (elem_f a b /\ f l1 l2)
+    | ([],[]) => True
+    | _ => False
     end
-    in
+  in
 
-    f x y
+  f x y.
+
+Global Instance list_DefinedRelation (T: Type) (_: DefinedRelation T) : DefinedRelation (list T) := {
+  le x y := le_list T x y le
 }.
 
-Global Instance option_DefinedRelation (T: Type) {_: DefinedRelation T} : DefinedRelation (option T) := {
+Global Instance option_DefinedRelation (T: Type) (_: DefinedRelation T) : DefinedRelation (option T) := {
   le x y :=
     match (x, y) with
     | (None, _) => True
@@ -62,9 +64,16 @@ Global Instance Pointer_DefinedRelation : DefinedRelation (Int * option P) := {
 
 Global Instance Value_DefinedRelation : DefinedRelation Value := {
   le x y :=
-    match (x, y) with
-    | (VBool x, VBool y) => x = y
-    | (VInt x, VInt y) => x = y
-    | _ => False
-    end
+    let f := fix f (x y : Value) :=
+      match (x, y) with
+      | (VInt x, VInt y) => x = y
+      | (VBool x, VBool y) => x = y
+      | (VPtr addr prov, VPtr addr' prov') => le (addr, prov') (addr, prov')
+      | (VTuple vals, VTuple vals') => le_list Value vals vals' f
+      | (VUnion chunks1, VUnion chunks2) => le chunks1 chunks2
+      | _ => False
+      end
+    in
+
+    f x y
 }.
