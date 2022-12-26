@@ -28,15 +28,15 @@ Fixpoint unwrap_abstract (l: list AbstractByte) : option (list byte) :=
 (* int *)
 Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option (list AbstractByte) :=
   match v with
-  | VInt x =>
-    encode_int_raw size signedness x
-    o-> (fun y => wrap_abstract y None)
+  | VInt x => Some x
   | _ => None
-  end.
+  end
+  >>= encode_int_raw size signedness
+  o-> (fun y => wrap_abstract y None).
 
 Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value :=
   unwrap_abstract l
-  >>= (fun x => decode_int_raw size signedness x)
+  >>= decode_int_raw size signedness
   o-> VInt.
 
 (* bool *)
@@ -120,6 +120,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
 
 Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
   let elem_size := ty_size elem in
+
   let enc := fun x =>
     subencode elem x
     >>= assuming (fun bytes => length bytes =? elem_size)
@@ -149,12 +150,11 @@ Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Enc
   let f := fix f (l: list AbstractByte) (fields: Fields) (vals: list Value) : option (list AbstractByte) :=
     match (fields,vals) with
     | ((offset, sub_ty)::fields', v::vals') =>
-      match subencode sub_ty v with
-      | Some bytes =>
+      (subencode sub_ty v)
+      >>= (fun bytes =>
         let l' := write_subslice_at_index l offset bytes in
         f l' fields' vals'
-      | None => None
-      end
+      )
     | (_::_,[]) => None
     | ([],_::_) => None
     | ([],[]) => Some l
