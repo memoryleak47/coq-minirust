@@ -49,21 +49,18 @@ Definition encode_uint_le (size : Size) (i : Int): list byte :=
   bytes.
 
 Definition encode_int_le (size: Size) (signedness: Signedness) (i : Int) : option (list byte) :=
-  if int_in_range i size signedness then
-    let out :=
-      match signedness with
-      | Unsigned => encode_uint_le size i
-      | Signed =>
-        if (i >=? 0)%Z then
-          encode_uint_le size i
-        else
-          let offset := signed_offset size in
-          encode_uint_le size (i + offset)%Z
-      end
-    in
-
-    Some out
-  else None.
+  Some (
+    match signedness with
+    | Unsigned => encode_uint_le size i
+    | Signed =>
+      if (i >=? 0)%Z then
+        encode_uint_le size i
+      else
+        let offset := signed_offset size in
+        encode_uint_le size (i + offset)%Z
+    end
+  )
+  >>= assuming_const (int_in_range i size signedness).
 
 Definition encode_int_raw (size: Size) (signedness: Signedness) (i : Int) : option (list byte) :=
   let bytes := (encode_int_le size signedness i) in
@@ -82,19 +79,20 @@ Definition decode_uint_le (size: Size) (bytes: list byte): Int :=
   Z.of_N n.
 
 Definition decode_int_le (size: Size) (signedness: Signedness) (l: list byte) : option Int :=
-  if length l =? size then
+  Some (
     let i := decode_uint_le size l in
     match signedness with
-    | Unsigned => Some i
+    | Unsigned => i
     | Signed =>
       let stop := int_stop size Signed in
       if (i >=? stop)%Z then
         let offset := signed_offset size in
-        Some (i - offset)%Z
+        (i - offset)%Z
       else
-        Some i
+        i
     end
-  else None.
+  )
+  >>= assuming_const (length l =? size).
 
 Definition decode_int_raw (size: Size) (signedness: Signedness) (l: list byte) : option Int :=
   let l :=

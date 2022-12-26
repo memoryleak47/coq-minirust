@@ -87,8 +87,8 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
     end
   in
 
-  let prov :=
-    if (forallb has_start_prov l) then start_prov else None
+  let prov := start_prov
+    >>= assuming_const (forallb has_start_prov l)
   in
 
   let align :=
@@ -103,7 +103,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
 
   unwrap_abstract l
   >>= (fun bytes => decode_int_raw PTR_SIZE Unsigned bytes)
-  >>= (fun addr =>
+  >>= assuming (fun addr =>
     let constraints : bool := (addr >? 0)%Z && (addr mod align =? 0)%Z in
     let is_raw : bool :=
       match ptr_ty with
@@ -112,9 +112,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
       end
     in
 
-    if (is_raw || constraints) then
-      Some addr
-    else None
+    is_raw || constraints
   )
   o-> (fun addr => VPtr addr prov).
 
@@ -124,21 +122,15 @@ Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder)
   let elem_size := ty_size elem in
   let enc := fun x =>
     subencode elem x
-    >>= (fun bytes =>
-      if (length bytes =? elem_size) then
-        Some bytes
-      else None
-    )
+    >>= assuming (fun bytes => length bytes =? elem_size)
   in
 
   match v with
   | VTuple vals => Some vals
   | _ => None
   end
-  >>= (fun vals =>
-    if (Z.of_nat (length vals) =? count)%Z then
-      Some vals
-    else None
+  >>= assuming (fun vals =>
+    (Z.of_nat (length vals) =? count)%Z
   )
   >>= (fun vals => transpose (map enc vals))
   o-> (fun bytes => concat bytes).
@@ -185,19 +177,18 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
     end
   in
 
-  if length l =? size then
-    transpose (map f fields) o-> VTuple
-  else None.
+  transpose (map f fields)
+  o-> VTuple
+  >>= assuming_const (length l =? size).
 
 (* unions *)
 Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) : option (list AbstractByte) :=
   let f := fix f (l: list AbstractByte) (chunks: Chunks) (chunks_data: list (list AbstractByte)) :=
     match (chunks, chunks_data) with
     | ((offset, chunk_s)::chunks', y::chunks_data') =>
-      if (chunk_s =? length y) then
-        let l' := write_subslice_at_index l offset y in
-        f l' chunks' chunks_data'
-      else None
+      let l' := write_subslice_at_index l offset y in
+      (f l' chunks' chunks_data')
+      >>= assuming_const (chunk_s =? length y)
     | (_::_,[]) => None
     | ([],_::_) => None
     | ([],[]) => Some l
@@ -210,10 +201,8 @@ Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value
   | VUnion chunks_data => Some chunks_data
   | _ => None
   end
-  >>= (fun chunks_data =>
-    if (length chunks_data =? length chunks) then
-      Some chunks_data
-    else None
+  >>= assuming (fun chunks_data =>
+    (length chunks_data =? length chunks)
   )
   >>= (fun chunks_data => f uninit chunks chunks_data).
 
@@ -227,9 +216,8 @@ Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list 
     end
   in
 
-  if length l =? size then
-    Some (f [] chunks)
-  else None.
+  Some (f [] chunks)
+  >>= assuming_const (length l =? size).
 
 (* combining encode, decode together: *)
 
