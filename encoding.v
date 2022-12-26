@@ -204,8 +204,19 @@ Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value
   | _ => None
   end.
 
-Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value := None.
+Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value :=
+  let f := fix f (chunk_data: list (list AbstractByte)) (chunks: Chunks) :=
+    match chunks with
+    | (offset, chunk_s)::chunks' =>
+      let bytes := subslice_with_length l offset chunk_s in
+      f (chunk_data ++ [bytes]) chunks'
+    | [] => VUnion chunk_data
+    end
+  in
 
+  if length l =? size then
+    Some (f [] chunks)
+  else None.
 
 (* combining encode, decode together: *)
 
