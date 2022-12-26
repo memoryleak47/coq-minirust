@@ -21,7 +21,7 @@ Fixpoint wrap_abstract (l: list byte) (p: option P) : list AbstractByte :=
 Fixpoint unwrap_abstract (l: list AbstractByte) : option (list byte) :=
   match l with
   | Uninit::_ => None
-  | (Init x _)::l' => option_map (fun y => x::y) (unwrap_abstract l')
+  | (Init x _)::l' => (unwrap_abstract l') o-> (fun y => x::y)
   | [] => Some []
   end.
 
@@ -30,7 +30,7 @@ Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option 
   match v with
   | VInt x =>
     let opt_bytes := encode_int_raw size signedness x in
-    let opt_bytes := option_map (fun y => wrap_abstract y None) opt_bytes in
+    let opt_bytes := opt_bytes o-> (fun y => wrap_abstract y None) in
     opt_bytes
   | _ => None
   end.
@@ -38,7 +38,7 @@ Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option 
 Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value :=
   let opt_bytes := unwrap_abstract l in
   let opt_int := opt_bytes >>= (fun x => decode_int_raw size signedness x) in
-  let opt_val := option_map VInt opt_int in
+  let opt_val := opt_int o-> VInt in
   opt_val.
 
 (* bool *)
@@ -61,7 +61,7 @@ Definition encode_ptr (_ptr_ty: PtrTy) (v: Value) : option (list AbstractByte) :
   match v with
   | VPtr addr opt_p =>
     let opt_bytes := encode_int_raw PTR_SIZE Unsigned addr in
-    option_map (fun bytes => wrap_abstract bytes opt_p) opt_bytes
+    opt_bytes o-> (fun bytes => wrap_abstract bytes opt_p)
   | _ => None
   end.
 
@@ -130,7 +130,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
   in
 
   let opt_ptr :=
-    option_map (fun addr => VPtr addr prov) opt_addr
+    opt_addr o-> (fun addr => VPtr addr prov)
   in
 
   opt_ptr.
@@ -172,7 +172,7 @@ Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecod
   let c := chunks l elem_size in
   let dec := subdecoder elem in
   let opt := transpose (map dec c) in
-  option_map VTuple opt.
+  opt o-> VTuple.
 
 (* tuples *)
 Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
@@ -207,10 +207,9 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
     end
   in
 
-  match length l =? size with
-  | false => None
-  | true => option_map VTuple (transpose (map f fields))
-  end.
+  if length l =? size then
+    transpose (map f fields) o-> VTuple
+  else None.
 
 (* unions *)
 Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) : option (list AbstractByte) :=

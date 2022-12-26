@@ -6,15 +6,14 @@ Require Import List.
 Import ListNotations.
 Require Import ssrfun.
 
-Notation "x >>= y" := (Option.bind y x) (at level 70).
+Notation "x >>= f" := (Option.bind f x) (at level 70).
+Notation "x o-> f" := (option_map f x) (at level 70).
 
 Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
   match l with
   | [] => Some []
   | None::_ => None
-  | (Some a)::rest =>
-    let f := fun r => a::r in
-    option_map f (transpose rest)
+  | (Some a)::l' => (transpose l') o-> (fun r => a::r)
   end.
 
 Fixpoint subslice_with_length {T: Type} (l: list T) (start: nat) (length: nat) : list T :=

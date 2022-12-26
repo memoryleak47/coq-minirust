@@ -9,6 +9,7 @@ Require Import Ndigits.
 Import ListNotations.
 
 Require Import defs.
+Require Import utils.
 
 (* fundamentals *)
 
@@ -49,21 +50,25 @@ Definition encode_uint_le (size : Size) (i : Int): list byte :=
 
 Definition encode_int_le (size: Size) (signedness: Signedness) (i : Int) : option (list byte) :=
   if int_in_range i size signedness then
-    match signedness with
-    | Unsigned => Some (encode_uint_le size i)
-    | Signed =>
-      if (i >=? 0)%Z then
-        Some (encode_uint_le size i)
-      else
-        let offset := signed_offset size in
-        Some (encode_uint_le size (i + offset))%Z
-    end
+    let out :=
+      match signedness with
+      | Unsigned => encode_uint_le size i
+      | Signed =>
+        if (i >=? 0)%Z then
+          encode_uint_le size i
+        else
+          let offset := signed_offset size in
+          encode_uint_le size (i + offset)%Z
+      end
+    in
+
+    Some out
   else None.
 
 Definition encode_int_raw (size: Size) (signedness: Signedness) (i : Int) : option (list byte) :=
   let bytes := (encode_int_le size signedness i) in
   match ENDIANNESS with
-  | BigEndian => option_map (fun x => rev x) bytes (* this `fun` seems redundant, but it isn't *)
+  | BigEndian => bytes o-> (fun x => rev x) (* this `fun` seems redundant, but it isn't *)
   | LittleEndian => bytes
   end.
 
