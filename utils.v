@@ -32,6 +32,11 @@ Fixpoint write_subslice_at_index {T: Type} (l: list T) (start: nat) (other: list
   | ([],_,_) => []
   end.
 
+Definition assuming {T: Type} (o: option T) (f: T -> bool) :=
+  o >>= (fun t =>
+    if f t then Some t else None
+  ).
+
 Fixpoint chunks_impl {T: Type} (tmp: list T) (chunk_size: nat) (l: list T) : list (list T) :=
   match (chunk_size =? length tmp,l) with
   | (_,[]) => [tmp]

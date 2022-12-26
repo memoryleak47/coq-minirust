@@ -29,17 +29,15 @@ Fixpoint unwrap_abstract (l: list AbstractByte) : option (list byte) :=
 Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option (list AbstractByte) :=
   match v with
   | VInt x =>
-    let opt_bytes := encode_int_raw size signedness x in
-    let opt_bytes := opt_bytes o-> (fun y => wrap_abstract y None) in
-    opt_bytes
+    encode_int_raw size signedness x
+    o-> (fun y => wrap_abstract y None)
   | _ => None
   end.
 
 Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value :=
-  let opt_bytes := unwrap_abstract l in
-  let opt_int := opt_bytes >>= (fun x => decode_int_raw size signedness x) in
-  let opt_val := opt_int o-> VInt in
-  opt_val.
+  unwrap_abstract l
+  >>= (fun x => decode_int_raw size signedness x)
+  o-> VInt.
 
 (* bool *)
 Definition encode_bool (v: Value) : option (list AbstractByte) :=
@@ -60,8 +58,8 @@ Definition decode_bool (l: list AbstractByte) : option Value :=
 Definition encode_ptr (_ptr_ty: PtrTy) (v: Value) : option (list AbstractByte) :=
   match v with
   | VPtr addr opt_p =>
-    let opt_bytes := encode_int_raw PTR_SIZE Unsigned addr in
-    opt_bytes o-> (fun bytes => wrap_abstract bytes opt_p)
+    encode_int_raw PTR_SIZE Unsigned addr
+    o-> (fun bytes => wrap_abstract bytes opt_p)
   | _ => None
   end.
 
@@ -90,10 +88,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
   in
 
   let prov :=
-    match (forallb has_start_prov l) with
-    | true => start_prov
-    | false => None
-    end
+    if (forallb has_start_prov l) then start_prov else None
   in
 
   let align :=
@@ -106,64 +101,47 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
 
   let align := Z.of_nat align in
 
-  let opt_bytes := unwrap_abstract l in
+  unwrap_abstract l
+  >>= (fun bytes => decode_int_raw PTR_SIZE Unsigned bytes)
+  >>= (fun addr =>
+    let constraints : bool := (addr >? 0)%Z && (addr mod align =? 0)%Z in
+    let is_raw : bool :=
+      match ptr_ty with
+      | Raw _ _ => true
+      | _ => false
+      end
+    in
 
-  let opt_addr : option Int := opt_bytes >>=
-    (fun bytes => decode_int_raw PTR_SIZE Unsigned bytes)
-  in
-
-  (* constraints check *)
-  let opt_addr := opt_addr >>=
-    (fun addr =>
-      let constraints : bool := (addr >? 0)%Z && (addr mod align =? 0)%Z in
-      let is_raw : bool :=
-        match ptr_ty with
-        | Raw _ _ => true
-        | _ => false
-        end
-      in
-
-      if (is_raw || constraints) then
-        Some addr
-      else None
-    )
-  in
-
-  let opt_ptr :=
-    opt_addr o-> (fun addr => VPtr addr prov)
-  in
-
-  opt_ptr.
+    if (is_raw || constraints) then
+      Some addr
+    else None
+  )
+  o-> (fun addr => VPtr addr prov).
 
 (* arrays *)
 
 Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
   let elem_size := ty_size elem in
   let enc := fun x =>
-    let opt_bytes := subencode elem x in
-    match opt_bytes with
-    | Some bytes =>
-      match (length bytes =? elem_size) with
-      | true => Some bytes
-      | false => None
-      end
-    | None => None
-    end
+    subencode elem x
+    >>= (fun bytes =>
+      if (length bytes =? elem_size) then
+        Some bytes
+      else None
+    )
   in
 
   match v with
-  | VTuple vals =>
-    match (Z.of_nat (length vals) =? count)%Z with
-    | true =>
-      let opt_bytes := map enc vals in
-      match transpose opt_bytes with
-      | Some bytes => Some (concat bytes)
-      | None => None
-      end
-    | false => None
-    end
+  | VTuple vals => Some vals
   | _ => None
- end.
+  end
+  >>= (fun vals =>
+    if (Z.of_nat (length vals) =? count)%Z then
+      Some vals
+    else None
+  )
+  >>= (fun vals => transpose (map enc vals))
+  o-> (fun bytes => concat bytes).
 
 Definition mk_uninit (size: Size) := map (fun _ => Uninit) (seq 0 size).
 
@@ -229,12 +207,15 @@ Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value
   let uninit := mk_uninit size in
 
   match v with
-  | VUnion chunks_data =>
-    if (length chunks_data =? length chunks) then
-      f uninit chunks chunks_data
-    else None
+  | VUnion chunks_data => Some chunks_data
   | _ => None
-  end.
+  end
+  >>= (fun chunks_data =>
+    if (length chunks_data =? length chunks) then
+      Some chunks_data
+    else None
+  )
+  >>= (fun chunks_data => f uninit chunks chunks_data).
 
 Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) : option Value :=
   let f := fix f (chunk_data: list (list AbstractByte)) (chunks: Chunks) :=
