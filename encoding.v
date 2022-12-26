@@ -140,8 +140,28 @@ Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecod
   option_map VTuple opt.
 
 (* tuples *)
-(* TODO implement *)
-Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) := None.
+Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
+  let f := fix f (l: list AbstractByte) (fields: Fields) (vals: list Value) : option (list AbstractByte) :=
+    match (fields,vals) with
+    | ((offset, sub_ty)::fields', v::vals') =>
+      match subencode sub_ty v with
+      | Some bytes =>
+        let l' := write_subslice_at_index l offset bytes in
+        f l' fields' vals'
+      | None => None
+      end
+    | (_::_,[]) => None
+    | ([],_::_) => None
+    | ([],[]) => Some l
+    end
+  in
+
+  let uninit := map (fun _ => Uninit) (seq 0 size) in
+
+  match v with
+  | VTuple vals => f uninit fields vals
+  | _ => None
+  end.
 
 (* TODO implement *)
 Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value := None.

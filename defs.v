@@ -39,7 +39,6 @@ Inductive Mutability :=
  | Immutable : Mutability.
 
 (* offset, length pairs *)
-Definition Fields := list (Size * Size).
 Definition Chunks := list (Size * Size).
 
 Inductive PtrTy : Type :=
@@ -51,9 +50,12 @@ Inductive Ty : Type :=
  | TBool : Ty
  | TInt : Size -> Signedness -> Ty
  | TPtr : PtrTy -> Ty
- | TTuple : Fields -> Size -> Ty
+ | TTuple : list (Size * Ty) -> Size -> Ty
  | TArray : Ty -> Int -> Ty
- | TUnion : Fields -> Chunks -> Size -> Ty.
+ | TUnion : list (Size * Ty) -> Chunks -> Size -> Ty.
+
+(* TODO somehow get `Fields` to be used in TTuple and TUnion. *)
+Definition Fields := list (Size * Ty).
 
 Inductive AbstractByte : Type :=
  | Uninit : AbstractByte
