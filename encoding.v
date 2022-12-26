@@ -30,7 +30,7 @@ Definition decode_bool (l: list AbstractByte) : option Value :=
 (* int encoding is defined in int_encoding.v *)
 
 (* ptr *)
-Definition encode_ptr (v: Value) : option (list AbstractByte) :=
+Definition encode_ptr (_ptr_ty: PtrTy) (v: Value) : option (list AbstractByte) :=
   match v with
   | VPtr addr opt_p =>
     let insert_provenance := fun x =>
@@ -139,6 +139,13 @@ Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecod
   let opt := transpose (map dec c) in
   option_map VTuple opt.
 
+(* tuples *)
+(* TODO implement *)
+Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) := None.
+
+(* TODO implement *)
+Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value := None.
+
 (* combining encode, decode together: *)
 
 (* encoding can fail, if ty and val are not compatible. *)
@@ -146,6 +153,8 @@ Fixpoint encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
  match ty with
   | TInt size signedness => encode_int size signedness val
   | TBool => encode_bool val
+  | TPtr ptr_ty => encode_ptr ptr_ty val
+  | TTuple fields size => encode_tuple fields size val encode
   | TArray elem count => encode_array elem count val encode
   | _ => None
  end.
@@ -154,6 +163,8 @@ Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
  match ty with
   | TInt size signedness => decode_int size signedness l
   | TBool => decode_bool l
+  | TPtr ptr_ty => decode_ptr ptr_ty l
+  | TTuple fields size => decode_tuple fields size l decode
   | TArray elem count => decode_array elem count l decode
   | _ => None
  end.
