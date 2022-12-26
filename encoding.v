@@ -101,7 +101,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
 (* arrays *)
 
 Definition Encoder := Ty -> Value -> option (list AbstractByte).
-Definition Decoder := Ty -> list AbstractByte -> option (list Value).
+Definition Decoder := Ty -> list AbstractByte -> option Value.
 
 Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
   match l with
@@ -165,8 +165,12 @@ Fixpoint chunks_impl {T: Type} (tmp: list T) (chunk_size: nat) (l: list T) : lis
 
 Definition chunks {T: Type} (l: list T) (chunk_size: nat) := chunks_impl [] chunk_size l.
 
-Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) : option Value.
-Admitted.
+Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecoder: Decoder) : option Value :=
+  let elem_size := ty_size elem in
+  let c := chunks l elem_size in
+  let dec := subdecoder elem in
+  let opt := transpose (map dec c) in
+  option_map VTuple opt.
 
 (* combining encode, decode together: *)
 
