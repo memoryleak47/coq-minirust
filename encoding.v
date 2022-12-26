@@ -12,6 +12,35 @@ Require Import utils.
 Definition Encoder := Ty -> Value -> option (list AbstractByte).
 Definition Decoder := Ty -> list AbstractByte -> option Value.
 
+Fixpoint wrap_abstract (l: list byte) (p: option P) : list AbstractByte :=
+  match l with
+  | x::l' => (Init x p)::(wrap_abstract l' p)
+  | [] => []
+  end.
+
+Fixpoint unwrap_abstract (l: list AbstractByte) : option (list byte) :=
+  match l with
+  | Uninit::_ => None
+  | (Init x _)::l' => option_map (fun y => x::y) (unwrap_abstract l')
+  | [] => Some []
+  end.
+
+(* int *)
+Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option (list AbstractByte) :=
+  match v with
+  | VInt x =>
+    let opt_bytes := encode_int_raw size signedness x in
+    let opt_bytes := option_map (fun y => wrap_abstract y None) opt_bytes in
+    opt_bytes
+  | _ => None
+  end.
+
+Definition decode_int (size: Size) (signedness: Signedness) (l: list AbstractByte) : option Value :=
+  let opt_bytes := unwrap_abstract l in
+  let opt_int := opt_bytes >>= (fun x => decode_int_raw size signedness x) in
+  let opt_val := option_map VInt opt_int in
+  opt_val.
+
 (* bool *)
 Definition encode_bool (v: Value) : option (list AbstractByte) :=
  match v with
@@ -27,25 +56,12 @@ Definition decode_bool (l: list AbstractByte) : option Value :=
   | _ => None
  end.
 
-(* int encoding is defined in int_encoding.v *)
-
 (* ptr *)
 Definition encode_ptr (_ptr_ty: PtrTy) (v: Value) : option (list AbstractByte) :=
   match v with
   | VPtr addr opt_p =>
-    let insert_provenance := fun x =>
-      match x with
-      | Init b _ => Init b opt_p
-      | Uninit => Uninit
-      end
-    in
-
-    match encode_int PTR_SIZE Unsigned (VInt addr) with
-    | Some bytes =>
-      let bytes := map insert_provenance bytes in
-      Some bytes
-    | None => None
-    end
+    let opt_bytes := encode_int_raw PTR_SIZE Unsigned addr in
+    option_map (fun bytes => wrap_abstract bytes opt_p) opt_bytes
   | _ => None
   end.
 
@@ -90,17 +106,34 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
 
   let align := Z.of_nat align in
 
-  match decode_int PTR_SIZE Unsigned l with
-  | Some (VInt addr) =>
-    let constraints := (addr >? 0)%Z && (addr mod align =? 0)%Z in
-    let ptr := VPtr addr prov in
-    match (ptr_ty, constraints) with
-    | (Raw _ _, _) => Some ptr (* raw ptrs don't need to satisfy the constraints *)
-    | (_, true) => Some ptr
-    | (_, false) => None
-    end
-  | _ => None
-  end.
+  let opt_bytes := unwrap_abstract l in
+
+  let opt_addr : option Int := opt_bytes >>=
+    (fun bytes => decode_int_raw PTR_SIZE Unsigned bytes)
+  in
+
+  (* constraints check *)
+  let opt_addr := opt_addr >>=
+    (fun addr =>
+      let constraints : bool := (addr >? 0)%Z && (addr mod align =? 0)%Z in
+      let is_raw : bool :=
+        match ptr_ty with
+        | Raw _ _ => true
+        | _ => false
+        end
+      in
+
+      if (is_raw || constraints) then
+        Some addr
+      else None
+    )
+  in
+
+  let opt_ptr :=
+    option_map (fun addr => VPtr addr prov) opt_addr
+  in
+
+  opt_ptr.
 
 (* arrays *)
 

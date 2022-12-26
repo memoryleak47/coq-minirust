@@ -4,6 +4,9 @@ Require Import Coq.Init.Byte.
 Require Import ZArith.
 Require Import List.
 Import ListNotations.
+Require Import ssrfun.
+
+Notation "x >>= y" := (Option.bind y x) (at level 70).
 
 Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
   match l with
