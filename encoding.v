@@ -163,8 +163,19 @@ Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Enc
   | _ => None
   end.
 
-(* TODO implement *)
-Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value := None.
+Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value :=
+  let f := fun arg =>
+    match arg with
+    | (offset, sub_ty) =>
+      let sub_l := subslice_with_length l offset (ty_size sub_ty) in
+      subdecode sub_ty sub_l
+    end
+  in
+
+  match length l =? size with
+  | false => None
+  | true => option_map VTuple (transpose (map f fields))
+  end.
 
 (* combining encode, decode together: *)
 
