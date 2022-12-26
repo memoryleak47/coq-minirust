@@ -7,6 +7,10 @@ Import ListNotations.
 
 Require Import defs.
 Require Import int_encoding.
+Require Import utils.
+
+Definition Encoder := Ty -> Value -> option (list AbstractByte).
+Definition Decoder := Ty -> list AbstractByte -> option Value.
 
 (* bool *)
 Definition encode_bool (v: Value) : option (list AbstractByte) :=
@@ -100,18 +104,6 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
 
 (* arrays *)
 
-Definition Encoder := Ty -> Value -> option (list AbstractByte).
-Definition Decoder := Ty -> list AbstractByte -> option Value.
-
-Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
-  match l with
-  | [] => Some []
-  | None::_ => None
-  | (Some a)::rest =>
-    let f := fun r => a::r in
-    option_map f (transpose rest)
-  end.
-
 Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
   let elem_size := ty_size elem in
   let enc := fun x =>
@@ -139,31 +131,6 @@ Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder)
     end
   | _ => None
  end.
-
-Fixpoint subslice_with_length {T: Type} (l: list T) (start: nat) (length: nat) : list T :=
-  match (l,start,length) with
-  | (_::l', S start', ln) => subslice_with_length l' start' ln
-  | (x::l', 0, S ln') => x::(subslice_with_length l' 0 ln')
-  | (_, 0, 0) => []
-  | ([],_,_) => []
-  end.
-
-Fixpoint write_subslice_at_index {T: Type} (l: list T) (start: nat) (other: list T) : list T :=
-  match (l,start,other) with
-  | (x::l', S start', o) => x::(write_subslice_at_index l' start' o)
-  | (_::l', 0, y::o') => y::(write_subslice_at_index l' 0 o')
-  | (l, 0, []) => l
-  | ([],_,_) => []
-  end.
-
-Fixpoint chunks_impl {T: Type} (tmp: list T) (chunk_size: nat) (l: list T) : list (list T) :=
-  match (chunk_size =? length tmp,l) with
-  | (_,[]) => [tmp]
-  | (true,x::l') => tmp::(chunks_impl [x] chunk_size l')
-  | (false,x::l') => chunks_impl (tmp ++ [x]) chunk_size l'
-  end.
-
-Definition chunks {T: Type} (l: list T) (chunk_size: nat) := chunks_impl [] chunk_size l.
 
 Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecoder: Decoder) : option Value :=
   let elem_size := ty_size elem in

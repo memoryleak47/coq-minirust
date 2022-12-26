@@ -5,3 +5,4 @@ lemma.v
 thm.v
 encoding.v
 int_encoding.v
+utils.v
