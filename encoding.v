@@ -180,7 +180,7 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
   end.
 
 (* unions *)
-Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
+Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) : option (list AbstractByte) :=
   let f := fix f (l: list AbstractByte) (chunks: Chunks) (chunks_data: list (list AbstractByte)) :=
     match (chunks, chunks_data) with
     | ((offset, chunk_s)::chunks', y::chunks_data') =>
@@ -204,7 +204,7 @@ Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value
   | _ => None
   end.
 
-Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value :=
+Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) : option Value :=
   let f := fix f (chunk_data: list (list AbstractByte)) (chunks: Chunks) :=
     match chunks with
     | (offset, chunk_s)::chunks' =>
@@ -228,7 +228,7 @@ Fixpoint encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
   | TPtr ptr_ty => encode_ptr ptr_ty val
   | TTuple fields size => encode_tuple fields size val encode
   | TArray elem count => encode_array elem count val encode
-  | TUnion fields chunks size => encode_union fields chunks size val encode
+  | TUnion fields chunks size => encode_union fields chunks size val
  end.
 
 Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
@@ -238,7 +238,7 @@ Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
   | TPtr ptr_ty => decode_ptr ptr_ty l
   | TTuple fields size => decode_tuple fields size l decode
   | TArray elem count => decode_array elem count l decode
-  | TUnion fields chunks size => decode_union fields chunks size l decode
+  | TUnion fields chunks size => decode_union fields chunks size l
  end.
 
 Definition is_valid_for (ty : Ty) (v : Value) := exists l, decode ty l = Some v.
