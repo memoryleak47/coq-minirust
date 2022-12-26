@@ -5,44 +5,66 @@ Require Import Coq.Init.Byte.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Definition le_ptr (addr: Int) (prov: option P) (addr': Int) (prov': option P) : Prop :=
-  let a := addr = addr' in
-  let b :=
-    match (prov, prov') with
-    | (None, _) => True
-    | (Some p, Some p') => (P_EQ p p') = true
-    | _ => False
-    end
-  in
+Class DefinedRelation (T : Type) := {
+  le : T -> T -> Prop
+}.
 
-  a /\ b.
-
-(* less-than or equally defined value *)
-Definition le_val (v1 v2 : Value) : Prop :=
- match (v1, v2) with
-  | (VBool x, VBool y) => x = y
-  | (VInt x, VInt y) => x = y
-  | _ => False
- end.
-
-Definition le_abstract_byte (b1 b2 : AbstractByte) : Prop :=
-  match (b1, b2) with
+Global Instance AbstractByte_DefinedRelation : DefinedRelation AbstractByte := {
+  le x y :=
+    match (x, y) with
     | (Uninit, _) => True
     | (Init data1 None, Init data2 _) => data1=data2
     | (Init data1 (Some prov1), Init data2 (Some prov2)) => data1=data2 /\ prov1=prov2
     | _ => False
-  end.
+    end
+}.
 
-Fixpoint le_list (l1 l2 : list AbstractByte) : Prop :=
- match (l1, l2) with
-   | (a::x,b::y) => (le_abstract_byte a b /\ le_list x y)
-   | ([], []) => True
-   |  _ => False
- end.
+Global Instance list_DefinedRelation (T: Type) {_: DefinedRelation T} : DefinedRelation (list T) := {
+  le x y :=
+    let f := fix f (x y: list T) :=
+    match (x, y) with
+    | (a::l1,b::l2) => (le a b /\ f l1 l2)
+    | ([], []) => True
+    |  _ => False
+    end
+    in
 
-Definition le_opt (o1 o2 : option Value) : Prop :=
-  match (o1, o2) with
+    f x y
+}.
+
+Global Instance option_DefinedRelation (T: Type) {_: DefinedRelation T} : DefinedRelation (option T) := {
+  le x y :=
+    match (x, y) with
     | (None, _) => True
-    | (Some l, Some r) => le_val l r
+    | (Some l, Some r) => le l r
     | _ => False
-  end.
+    end
+}.
+
+Global Instance Pointer_DefinedRelation : DefinedRelation (Int * option P) := {
+  le x y :=
+    let addr := fst x in
+    let addr' := fst y in
+    let prov := snd x in
+    let prov' := snd y in
+
+    let a := addr = addr' in
+    let b :=
+      match (prov, prov') with
+      | (None, _) => True
+      | (Some p, Some p') => (P_EQ p p') = true
+      | _ => False
+      end
+    in
+
+    a /\ b
+}.
+
+Global Instance Value_DefinedRelation : DefinedRelation Value := {
+  le x y :=
+    match (x, y) with
+    | (VBool x, VBool y) => x = y
+    | (VInt x, VInt y) => x = y
+    | _ => False
+    end
+}.
