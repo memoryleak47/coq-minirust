@@ -43,7 +43,7 @@ Qed.
 Lemma bool_mono1 : mono1 TBool.
 Proof.
 unfold mono1.
-intros v1 v2 HLe valid1 valid2.
+intros _wf v1 v2 HLe valid1 valid2.
 destruct (valid_bool v1 valid1) as [b1 H1].
 destruct (valid_bool v2 valid2) as [b2 H2].
 rewrite H1,H2 in HLe. simpl in HLe.
@@ -57,7 +57,7 @@ Qed.
 Lemma bool_mono2 : mono2 TBool.
 Proof.
 unfold mono2.
-intros l1 l2 HLe.
+intros _wf l1 l2 HLe.
 destruct (mk_le_list _ _ HLe).
 - auto.
 - destruct l.
@@ -78,7 +78,7 @@ Qed.
 Lemma bool_rt1 : rt1 TBool.
 Proof.
 unfold rt1.
-intros v valid.
+intros _wf v valid.
 destruct (valid_bool v valid) as [b H].
 rewrite H. clear H valid v.
 destruct b.
@@ -89,7 +89,7 @@ Qed.
 Lemma bool_rt2 : rt2 TBool.
 Proof.
 unfold rt2.
-intros l v H.
+intros _wf l v H.
 destruct (mk_bool_cases1 l).
 - inversion H. clear v H H1.
   exists [Init x01 None]. simpl. split; reflexivity || auto.
