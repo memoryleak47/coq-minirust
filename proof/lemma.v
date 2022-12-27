@@ -1,4 +1,3 @@
-(*
 Require Import defs.
 Require Import le.
 Require Import Coq.Bool.Bool.
@@ -6,6 +5,8 @@ Require Import Coq.Init.Datatypes.
 Require Import Coq.Init.Byte.
 Require Import Coq.Lists.List.
 Import ListNotations.
+
+(*
 
 (* TODO fixup lemmas! *)
 (* <= of vals *)

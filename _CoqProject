@@ -1,8 +1,11 @@
--R . Minirust
-defs.v
-le.v
-lemma.v
-thm.v
-encoding.v
-int_encoding.v
-utils.v
+-R def Minirust.def
+-R proof Minirust.def
+
+def/defs.v
+def/le.v
+def/thm.v
+def/encoding.v
+def/int_encoding.v
+def/utils.v
+
+proof/lemma.v
