@@ -9,3 +9,4 @@ def/int_encoding.v
 def/utils.v
 
 proof/lemma.v
+proof/bool.v
