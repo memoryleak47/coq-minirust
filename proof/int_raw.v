@@ -55,7 +55,56 @@ unfold int_in_range in P.
 lia.
 Qed.
 
-Lemma rt1_uint_le (size: Size) (int: Int): (int_in_range int size Unsigned = true) -> decode_uint_le size (encode_uint_le size int) = int.
+(* uint *)
+
+Lemma uint_le_encode_valid (size: Size) (int : Int) (H: int_in_range int size Unsigned = true) :
+  length (encode_uint_le size int) = size.
+Proof.
+unfold encode_uint_le.
+rewrite map_length.
+rewrite Vector.length_to_list.
+reflexivity.
+Qed.
+
+Lemma lemma8 (n: nat) : (2 ^ (N.of_nat n))%N = N.shiftl_nat 1 n.
+induction n as [|n IH].
+- reflexivity.
+- replace ((2 ^ N.of_nat (S n))%N) with (2 * (2 ^ N.of_nat n))%N.
+  replace (N.shiftl_nat 1 (S n))%N with (2 * (N.shiftl_nat 1 n))%N.
+-- f_equal. assumption.
+-- replace (2 * N.shiftl_nat 1 n)%N with (N.shiftl_nat 1 n * 2)%N; try lia.
+   simpl. lia.
+-- rewrite <- N.pow_succ_r'.
+   lia.
+Qed.
+
+Lemma uint_le_decode_valid (size: Size) (l: list byte) (H: length l = size) :
+  int_in_range (decode_uint_le size l) size Unsigned = true.
+Proof.
+unfold decode_uint_le.
+unfold int_in_range.
+simpl.
+assert (forall x, Z.of_N x >=? 0 = true)%Z as E. {
+  intros x.
+  apply (proj2 (Z.geb_le (Z.of_N x) 0)).
+  lia.
+}
+rewrite E. simpl. clear E.
+apply (proj2 (Z.ltb_lt (Z.of_N _) _)).
+replace (2 ^ (Z.of_nat size * 8))%Z with (Z.of_N (2 ^ ((N.of_nat size) * 8))); try lia.
+- apply (proj1 (N2Z.inj_lt (ByteV2N _) _)).
+  replace (N.of_nat size * 8)%N with (N.of_nat (size * 8)); try lia.
+  rewrite lemma8.
+  assert (length (map Ascii.ascii_of_byte l) = size) as F. {
+    rewrite (@map_length _ _ Ascii.ascii_of_byte).
+    assumption.
+  } 
+  rewrite <- F.
+  apply (ByteV2N_upper_bound).
+Qed.
+
+Lemma rt1_uint_le (size: Size) (int: Int) (H: int_in_range int size Unsigned = true) :
+  decode_uint_le size (encode_uint_le size int) = int.
 Proof.
 intros H.
 unfold decode_uint_le, encode_uint_le.
@@ -79,4 +128,35 @@ rewrite N2Z.id.
 unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
+Admitted.
+
+(* int *)
+
+Lemma lemma7 (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) : exists l, Some l = encode_int_le size signedness int.
+Proof.
+unfold encode_int_le.
+rewrite H. simpl.
+(* TODO clean this up *)
+exists (match signedness with
+    | Signed =>
+        if (int >=? 0)%Z
+        then encode_uint_le size int
+        else
+         encode_uint_le size
+           (int + signed_offset size)%Z
+    | Unsigned => encode_uint_le size int
+    end).
+reflexivity.
+Qed.
+
+Lemma rt1_int_le (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
+exists l, Some l = encode_int_le size signedness int /\
+decode_int_le size signedness l = Some int.
+Proof.
+destruct signedness.
+- admit.
+- exists (encode_uint_le size int).
+unfold encode_int_le. rewrite H. simpl.
+split. { reflexivity. }
+unfold decode_int_le.
 Abort.
