@@ -39,54 +39,31 @@ rewrite Vector.of_list_to_list_opp.
 reflexivity.
 Qed.
 
-(* TODO look for simpler method to do Lemma 5 *)
-Definition Lemma5Prop (n: nat) := forall (v: Vector.t bool (n*8)),
-  ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
-
-Lemma lemma5_1 : Lemma5Prop 0.
-Proof.
-unfold Lemma5Prop.
-intros v. simpl in v.
-apply Vector.case0.
-reflexivity.
-Qed.
-
-Lemma lemma5_2_2 (n: nat) (v: Vector.t bool (S n)) :
+Lemma lemma5_2 (n: nat) (v: Vector.t bool (S n)) :
   exists h t, v = Vector.cons bool h n t.
 Proof.
 induction n,v using Vector.caseS.
 - exists h, v. reflexivity.
 Qed.
 
-Lemma lemma5_2 (n: nat) (IH: Lemma5Prop n)
-  : Lemma5Prop (S n).
+Lemma lemma5 (n: nat) (v: Vector.t bool (n*8)): ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
 Proof.
-intros v. simpl in v.
-destruct (lemma5_2_2 _ v) as [b0 [v0 H]]. rewrite H. clear v H.
-destruct (lemma5_2_2 _ v0) as [b1 [v1 H]]. rewrite H. clear v0 H.
-destruct (lemma5_2_2 _ v1) as [b2 [v2 H]]. rewrite H. clear v1 H.
-destruct (lemma5_2_2 _ v2) as [b3 [v3 H]]. rewrite H. clear v2 H.
-destruct (lemma5_2_2 _ v3) as [b4 [v4 H]]. rewrite H. clear v3 H.
-destruct (lemma5_2_2 _ v4) as [b5 [v5 H]]. rewrite H. clear v4 H.
-destruct (lemma5_2_2 _ v5) as [b6 [v6 H]]. rewrite H. clear v5 H.
-destruct (lemma5_2_2 _ v6) as [b7 [v7 H]]. rewrite H. clear v6 H.
-simpl.
-rewrite IH.
-auto.
-Qed.
-
-Lemma lemma5_pre (n: nat) : Lemma5Prop n.
-Proof.
-induction n.
-- apply lemma5_1.
-- apply lemma5_2.
-  assumption.
-Qed.
-
-Lemma lemma5 (n:nat) (v: Vector.t bool (n*8)) :
-  ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
-Proof.
-apply lemma5_pre.
+induction n as [|n IH].
+- simpl in v.
+  apply Vector.case0.
+  simpl. reflexivity.
+- simpl in v.
+  destruct (lemma5_2 _ v) as [b0 [v0 H]]. rewrite H. clear v H.
+  destruct (lemma5_2 _ v0) as [b1 [v1 H]]. rewrite H. clear v0 H.
+  destruct (lemma5_2 _ v1) as [b2 [v2 H]]. rewrite H. clear v1 H.
+  destruct (lemma5_2 _ v2) as [b3 [v3 H]]. rewrite H. clear v2 H.
+  destruct (lemma5_2 _ v3) as [b4 [v4 H]]. rewrite H. clear v3 H.
+  destruct (lemma5_2 _ v4) as [b5 [v5 H]]. rewrite H. clear v4 H.
+  destruct (lemma5_2 _ v5) as [b6 [v6 H]]. rewrite H. clear v5 H.
+  destruct (lemma5_2 _ v6) as [b7 [v7 H]]. rewrite H. clear v6 H.
+  simpl.
+  rewrite IH.
+  auto.
 Qed.
 
 Lemma lemma6 (size: Size) (v: BinNums.N) : Bv2N (N2Bv_sized (size * 8) v) = v.
