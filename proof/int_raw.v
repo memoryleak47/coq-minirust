@@ -1,4 +1,5 @@
 Require Import defs int_encoding.
+Require Import Coq.Init.Byte.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.EqdepFacts.
 Require Import List.
@@ -69,3 +70,13 @@ rewrite Znat.Z2N.id. { reflexivity. }
 destruct (destruct_int_in_range _ _ _ H).
 unfold int_start in H0. lia.
 Qed.
+
+Lemma rt2_uint_le (size: Size) (l: list byte) (P: length l = size) :
+  encode_uint_le size (decode_uint_le size l) = l.
+Proof.
+unfold encode_uint_le, decode_uint_le.
+rewrite N2Z.id.
+unfold ByteV2N.
+unfold N2ByteV_sized.
+unfold Basics.compose.
+Abort.
