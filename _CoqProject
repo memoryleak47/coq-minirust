@@ -11,3 +11,4 @@ def/wf.v
 
 proof/lemma.v
 proof/bool.v
+proof/int_raw.v
