@@ -36,7 +36,7 @@ Proof.
 unfold int_in_range.
 unfold int_start, int_stop. rewrite H2.
 simpl.
-destruct (@destruct_int_in_range _ _ _ H) as [_ Hbase].
+destruct (destruct_int_in_range H) as [_ Hbase].
 unfold int_stop in Hbase.
 apply (proj2 (Z.ltb_lt int _)).
 apply (Z.lt_trans _ _ _ Hbase). clear - size.
@@ -54,6 +54,7 @@ Qed.
 Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_range int size Signed = true) :
   int_in_range (int + signed_offset size)%Z size Unsigned = true.
 Proof.
+unfold int_in_range. destruct (destruct_int_in_range H2).
 Admitted.
 
 Lemma lemma4 (size: Size) (int: Int)
@@ -86,7 +87,7 @@ replace ((decode_uint_le size (encode_uint_le size int) >=?
 apply rt1_uint_le.
 apply (lemma2 _ _ H); lia.
 rewrite rt1_uint_le.
-destruct (destruct_int_in_range _ _ _ H).
+destruct (destruct_int_in_range H).
 unfold int_stop in H1.
 lia.
 apply (lemma2 _ _ H); lia.
@@ -98,13 +99,13 @@ split.
 --- unfold encode_int_le. rewrite H,E. simpl. reflexivity.
 --- unfold decode_int_le. simpl.
     rewrite rt1_uint_le.
-    destruct (destruct_int_in_range _ _ _ (lemma3 _ _ E H)) as [H0 H1].
+    destruct (destruct_int_in_range (lemma3 _ _ E H)) as [H0 H1].
 ---- rewrite uint_le_encode_valid.
      rewrite Nat.eqb_refl.
      simpl. f_equal.
      replace (int + signed_offset size >=? 2 ^ (Z.of_nat size * 8 - 1))%Z with true.
      lia.
-     destruct (destruct_int_in_range _ _ _ H) as [Hs0 Hs1].
+     destruct (destruct_int_in_range H) as [Hs0 Hs1].
      unfold int_start in Hs0.
      unfold signed_offset.
      apply lemma4.

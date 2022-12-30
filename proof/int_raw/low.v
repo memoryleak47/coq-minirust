@@ -147,7 +147,7 @@ rewrite bv2n_ignore_false_suffix.
 apply Bv2N_N2Bv.
 Qed.
 
-Lemma destruct_int_in_range (i: Int) (size: Size) (signed: Signedness) (P: int_in_range i size signed = true) :
+Lemma destruct_int_in_range {i: Int} {size: Size} {signed: Signedness} (P: int_in_range i size signed = true) :
 (i >= int_start size signed)%Z /\ (i < int_stop size signed)%Z.
 Proof.
 unfold int_in_range in P.
@@ -202,7 +202,7 @@ unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
 rewrite bvec_rt1.
-destruct (destruct_int_in_range _ _ _ H) as [H0 H1].
+destruct (destruct_int_in_range H) as [H0 H1].
 unfold int_start in H0.
 rewrite bv2n_n2bv.
 - rewrite Znat.Z2N.id. { reflexivity. }
