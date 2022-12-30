@@ -66,10 +66,6 @@ induction n as [|n IH].
   auto.
 Qed.
 
-Lemma lemma6 (size: Size) (n: N) : Bv2N (N2Bv_sized (size * 8) n) = n.
-Proof.
-Admitted.
-
 Lemma lemma7 (n: nat) : (2 ^ (N.of_nat n))%N = N.shiftl_nat 1 n.
 induction n as [|n IH].
 - reflexivity.
@@ -81,6 +77,24 @@ induction n as [|n IH].
 -- rewrite <- N.pow_succ_r'.
    lia.
 Qed.
+
+Lemma lemma8 (n: nat) (v: Vector.t bool n) (k: nat) : Bv2N (Vector.append v (Bvector.Bvect_false k)) = Bv2N v.
+Proof.
+Admitted.
+
+Lemma lemma6 (size: Size) (n: N) (H: (n < Z.to_N (int_stop size Unsigned))%N) : Bv2N (N2Bv_sized (size * 8) n) = n.
+Proof.
+assert (size*8 >= N.size_nat n) as H2. { admit. }
+assert (exists k, size*8 = N.size_nat n + k) as H3. {
+  exists (size*8 - N.size_nat n). lia.
+}
+clear H2.
+destruct H3 as [k Hk].
+rewrite Hk.
+rewrite (N2Bv_N2Bv_sized_above n k).
+rewrite lemma8.
+apply Bv2N_N2Bv.
+Admitted.
 
 Lemma destruct_int_in_range (i: Int) (size: Size) (signed: Signedness) (P: int_in_range i size signed = true) :
 (i >= int_start size signed)%Z /\ (i < int_stop size signed)%Z.
@@ -137,10 +151,15 @@ unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
 rewrite lemma5.
+destruct (destruct_int_in_range _ _ _ H) as [H0 H1].
+unfold int_start in H0.
 rewrite lemma6.
-rewrite Znat.Z2N.id. { reflexivity. }
-destruct (destruct_int_in_range _ _ _ H).
-unfold int_start in H0. lia.
+- rewrite Znat.Z2N.id. { reflexivity. }
+  lia.
+- apply Z2N.inj_lt.
+-- lia.
+-- unfold int_stop. lia.
+-- assumption.
 Qed.
 
 Lemma rt2_uint_le (size: Size) (l: list byte) (P: length l = size) :
