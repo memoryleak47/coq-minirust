@@ -8,6 +8,19 @@ Require Import ZArith.
 Require Import Zpow_facts.
 Require Import Lia.
 
+Lemma rewrite_empty_vector (v: Vector.t bool 0) : v = Vector.nil bool.
+Proof.
+apply (@Vector.case0 bool (fun v => v = Vector.nil bool)).
+reflexivity.
+Qed.
+
+Lemma rewrite_non_empty_vector {n: nat} (v: Vector.t bool (S n)) :
+  exists h t, v = Vector.cons bool h n t.
+Proof.
+induction n,v using Vector.caseS.
+- exists h, v. reflexivity.
+Qed.
+
 Lemma lemma1 (l: list Ascii.ascii): (map Ascii.ascii_of_byte (map Ascii.byte_of_ascii l)) = l.
 Proof.
 rewrite map_map.
@@ -40,12 +53,6 @@ rewrite Vector.of_list_to_list_opp.
 reflexivity.
 Qed.
 
-Lemma lemma5_2 (n: nat) (v: Vector.t bool (S n)) :
-  exists h t, v = Vector.cons bool h n t.
-Proof.
-induction n,v using Vector.caseS.
-- exists h, v. reflexivity.
-Qed.
 
 Lemma lemma5 (n: nat) (v: Vector.t bool (n*8)): ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
 Proof.
@@ -54,14 +61,14 @@ induction n as [|n IH].
   apply Vector.case0.
   simpl. reflexivity.
 - simpl in v.
-  destruct (lemma5_2 _ v) as [b0 [v0 H]]. rewrite H. clear v H.
-  destruct (lemma5_2 _ v0) as [b1 [v1 H]]. rewrite H. clear v0 H.
-  destruct (lemma5_2 _ v1) as [b2 [v2 H]]. rewrite H. clear v1 H.
-  destruct (lemma5_2 _ v2) as [b3 [v3 H]]. rewrite H. clear v2 H.
-  destruct (lemma5_2 _ v3) as [b4 [v4 H]]. rewrite H. clear v3 H.
-  destruct (lemma5_2 _ v4) as [b5 [v5 H]]. rewrite H. clear v4 H.
-  destruct (lemma5_2 _ v5) as [b6 [v6 H]]. rewrite H. clear v5 H.
-  destruct (lemma5_2 _ v6) as [b7 [v7 H]]. rewrite H. clear v6 H.
+  destruct (rewrite_non_empty_vector v) as [b0 [v0 H]]. rewrite H. clear v H.
+  destruct (rewrite_non_empty_vector v0) as [b1 [v1 H]]. rewrite H. clear v0 H.
+  destruct (rewrite_non_empty_vector v1) as [b2 [v2 H]]. rewrite H. clear v1 H.
+  destruct (rewrite_non_empty_vector v2) as [b3 [v3 H]]. rewrite H. clear v2 H.
+  destruct (rewrite_non_empty_vector v3) as [b4 [v4 H]]. rewrite H. clear v3 H.
+  destruct (rewrite_non_empty_vector v4) as [b5 [v5 H]]. rewrite H. clear v4 H.
+  destruct (rewrite_non_empty_vector v5) as [b6 [v6 H]]. rewrite H. clear v5 H.
+  destruct (rewrite_non_empty_vector v6) as [b7 [v7 H]]. rewrite H. clear v6 H.
   simpl.
   rewrite IH.
   auto.
@@ -81,7 +88,20 @@ Qed.
 
 Lemma lemma8 (n: nat) (v: Vector.t bool n) (k: nat) : Bv2N (Vector.append v (Bvector.Bvect_false k)) = Bv2N v.
 Proof.
-Admitted.
+induction n as [|n IHn].
+
+(* n = 0 *)
+- rewrite (rewrite_empty_vector v). clear v. simpl.
+  induction k as [|k IHk].
+-- reflexivity.
+-- simpl. rewrite IHk. reflexivity.
+
+(* n = S _ *)
+- destruct (rewrite_non_empty_vector v) as [hd [tl Hv]]. rewrite Hv. clear v Hv.
+  induction k as [|k IHk].
+-- simpl. rewrite IHn. reflexivity.
+-- simpl. rewrite IHn. reflexivity.
+Qed.
 
 Lemma lemma9 {n: N} {size: Size} (H: (n < Z.to_N (int_stop size Unsigned))%N) :
   size*8 >= N.size_nat n.
