@@ -13,17 +13,21 @@ Lemma lemma1 (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range i
 Proof.
 unfold encode_int_le.
 rewrite H. simpl.
-(* TODO clean this up *)
-exists (match signedness with
-    | Signed =>
-        if (int >=? 0)%Z
-        then encode_uint_le size int
-        else
-         encode_uint_le size
-           (int + signed_offset size)%Z
-    | Unsigned => encode_uint_le size int
-    end).
-reflexivity.
+destruct signedness, (int >=? 0)%Z.
+- exists (encode_uint_le size int). reflexivity.
+- exists (encode_uint_le size (int + signed_offset size)%Z). reflexivity.
+- exists (encode_uint_le size int). reflexivity.
+- exists (encode_uint_le size int). reflexivity.
+Qed.
+
+Lemma z_to_nat_exp (n: nat) : (2 ^ Z.of_nat n)%Z = Z.of_nat (2 ^ n).
+Proof.
+induction n as [|n IH].
+- reflexivity.
+- rewrite Nat.pow_succ_r.
+  replace (Z.of_nat (S n)) with (Z.succ (Z.of_nat n)); cycle 1. { lia. }
+  rewrite Z.pow_succ_r; try lia.
+lia.
 Qed.
 
 Lemma lemma2 (int: Int) (size: Size) (H: int_in_range int size Signed = true) (H2 : (int >=? 0)%Z = true) :
@@ -32,10 +36,20 @@ Proof.
 unfold int_in_range.
 unfold int_start, int_stop. rewrite H2.
 simpl.
-destruct (@destruct_int_in_range _ _ _ H) as [_ Hmax].
-unfold int_stop in Hmax.
+destruct (@destruct_int_in_range _ _ _ H) as [_ Hbase].
+unfold int_stop in Hbase.
 apply (proj2 (Z.ltb_lt int _)).
-Admitted.
+apply (Z.lt_trans _ _ _ Hbase). clear - size.
+destruct size. { simpl. lia. } (* this gives me size > 0 *)
+assert ((Z.of_nat (S size) * 8)%Z = Z.of_nat ((S size) * 8)) as A. { lia. }
+rewrite A. clear A.
+assert ((Z.of_nat ((S size) * 8) - 1)%Z = Z.of_nat ((S size) * 8 - 1)) as A. { lia. }
+rewrite A. clear A.
+do 2 rewrite z_to_nat_exp.
+apply inj_lt.
+apply Nat.pow_lt_mono_r. { lia. }
+lia.
+Qed.
 
 Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_range int size Signed = true) :
   int_in_range (int + signed_offset size)%Z size Unsigned = true.

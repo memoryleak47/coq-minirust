@@ -17,7 +17,7 @@ Definition int_start (size: Size) (signedness: Signedness) : Int :=
   let size := Z.of_nat size in
   match signedness with
   | Unsigned => 0%Z
-  | Signed => (-2^(size*8 - 1))%Z
+  | Signed => (-2^((size*8) - 1))%Z
   end.
 
 (* stop is exclusive! *)
@@ -25,7 +25,7 @@ Definition int_stop (size: Size) (signedness: Signedness) : Int :=
   let size := Z.of_nat size in
   match signedness with
   | Unsigned => (2^(size*8))%Z
-  | Signed => ((2^(size*8 - 1)))%Z
+  | Signed => (2^((size*8) - 1))%Z
   end.
 
 Definition int_in_range (i: Int) (size: Size) (signedness: Signedness) : bool :=
