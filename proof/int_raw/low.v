@@ -8,6 +8,24 @@ Require Import ZArith.
 Require Import Zpow_facts.
 Require Import Lia.
 
+(* used in conjunction with @Eqdep_dec.eq_rect_eq_dec. *)
+Lemma vector_retype {T O: Type} {n: nat} (f: forall n, Vector.t T n -> O) (v: Vector.t T n) (m:nat) :
+  forall (P: n=m), f n v = f m (eq_rect n (Vector.t T) v m P).
+Proof.
+intros P.
+rewrite <- P.
+rewrite <- Eqdep_dec.eq_rect_eq_dec.
+reflexivity.
+apply PeanoNat.Nat.eq_dec.
+Qed.
+
+Lemma lemma4 {T O: Type} {n:nat} (v:Vector.t T n) (f : forall n, Vector.t T n -> O) :
+f _ (Vector.of_list (Vector.to_list v)) = f n v.
+rewrite (vector_retype f _ n (Vector.length_to_list _ _ _)).
+rewrite Vector.of_list_to_list_opp.
+reflexivity.
+Qed.
+
 Lemma rewrite_empty_vector (v: Vector.t bool 0) : v = Vector.nil bool.
 Proof.
 apply (@Vector.case0 bool (fun v => v = Vector.nil bool)).
@@ -30,29 +48,6 @@ intros x.
 rewrite Ascii.ascii_of_byte_of_ascii.
 reflexivity.
 Qed.
-
-Lemma lemma2 {T:Type} (n: nat) (v: Vector.t T n) (P:n=n): eq_rect n (Vector.t T) v n P = v.
-Proof.
-rewrite <- Eqdep_dec.eq_rect_eq_dec.
-reflexivity. intros x y.
-apply PeanoNat.Nat.eq_dec.
-Qed.
-
-Lemma lemma3 {T O : Type} (n m:nat) (v:Vector.t T n) (f: forall n, Vector.t T n -> O) (P : n=m):
-f n v = f m (eq_rect n (Vector.t T) v m P).
-Proof.
-rewrite <- P.
-rewrite lemma2.
-reflexivity.
-Qed.
-
-Lemma lemma4 {T O: Type} (n:nat) (v:Vector.t T n) (f : forall n, Vector.t T n -> O) :
-f _ (Vector.of_list (Vector.to_list v)) = f n v.
-rewrite (lemma3 (length _) n _ _ (Vector.length_to_list _ _ _)).
-rewrite Vector.of_list_to_list_opp.
-reflexivity.
-Qed.
-
 
 Lemma lemma5 (n: nat) (v: Vector.t bool (n*8)): ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
 Proof.
@@ -194,6 +189,8 @@ rewrite lemma6.
 -- assumption.
 Qed.
 
+Lemma mk_var {T: Type} (t: T) : exists t', t=t'. exists t. reflexivity. Qed.
+
 Lemma rt2_uint_le (size: Size) (l: list byte) (P: length l = size) :
   encode_uint_le size (decode_uint_le size l) = l.
 Proof.
@@ -202,4 +199,15 @@ rewrite N2Z.id.
 unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
-Admitted.
+destruct (mk_var (map Ascii.ascii_of_byte l)) as [a1 Ha1]. rewrite Ha1.
+destruct (mk_var (Vector.of_list a1)) as [a2 Ha2]. rewrite Ha2.
+destruct (mk_var (ByteVector.to_Bvector a2)) as [a3 Ha3]. rewrite Ha3.
+assert (length a1 * 8 = size * 8) as Hlen. {
+  f_equal.
+  rewrite <- Ha1.
+  rewrite (map_length).
+  exact P.
+}
+rewrite (vector_retype _ a3 (size * 8) Hlen).
+rewrite (N2Bv_sized_Bv2N (size * 8) _).
+Abort.
