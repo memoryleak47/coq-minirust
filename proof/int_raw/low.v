@@ -39,13 +39,23 @@ induction n,v using Vector.caseS.
 - exists h, v. reflexivity.
 Qed.
 
-Lemma lemma1 (l: list Ascii.ascii): (map Ascii.ascii_of_byte (map Ascii.byte_of_ascii l)) = l.
+Lemma ascii_rt1 (l: list Ascii.ascii): (map Ascii.ascii_of_byte (map Ascii.byte_of_ascii l)) = l.
 Proof.
 rewrite map_map.
 replace (fun x => _) with (fun x : Ascii.ascii => x). { apply map_id. }
 apply functional_extensionality_dep.
 intros x.
 rewrite Ascii.ascii_of_byte_of_ascii.
+reflexivity.
+Qed.
+
+Lemma ascii_rt2 (l: list byte): (map Ascii.byte_of_ascii (map Ascii.ascii_of_byte l)) = l.
+Proof.
+rewrite map_map.
+replace (fun x => _) with (fun x : byte => x). { apply map_id. }
+apply functional_extensionality_dep.
+intros x.
+rewrite Ascii.byte_of_ascii_of_byte.
 reflexivity.
 Qed.
 
@@ -186,7 +196,7 @@ Lemma rt1_uint_le (size: Size) (int: Int) (H: int_in_range int size Unsigned = t
   decode_uint_le size (encode_uint_le size int) = int.
 Proof.
 unfold decode_uint_le, encode_uint_le.
-rewrite lemma1.
+rewrite ascii_rt1.
 rewrite lemma4.
 unfold ByteV2N.
 unfold N2ByteV_sized.
@@ -216,13 +226,18 @@ unfold Basics.compose.
 destruct (mk_var (map Ascii.ascii_of_byte l)) as [a1 Ha1]. rewrite Ha1.
 destruct (mk_var (Vector.of_list a1)) as [a2 Ha2]. rewrite Ha2.
 destruct (mk_var (ByteVector.to_Bvector a2)) as [a3 Ha3]. rewrite Ha3.
-assert (length a1 * 8 = size * 8) as Hlen. {
+assert (length a1 = size) as Hlen. {
   f_equal.
   rewrite <- Ha1.
   rewrite (map_length).
   exact P.
-}
-rewrite (vector_retype _ a3 (size * 8) Hlen).
-rewrite (N2Bv_sized_Bv2N (size * 8) _).
+} rewrite <- Hlen.
+rewrite (N2Bv_sized_Bv2N (_ * 8) _).
 rewrite <- Ha3. clear Ha3 a3.
-Abort.
+rewrite (bvec_rt2).
+rewrite <- Ha2. clear Ha2 a2.
+rewrite Vector.to_list_of_list_opp.
+rewrite <- Ha1. clear Ha1 a1 Hlen.
+rewrite ascii_rt2.
+reflexivity.
+Qed.
