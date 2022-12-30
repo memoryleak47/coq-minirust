@@ -5,6 +5,7 @@ Require Import Coq.Logic.EqdepFacts.
 Require Import List.
 Require Import Ndigits.
 Require Import ZArith.
+Require Import Zpow_facts.
 Require Import Lia.
 
 Lemma lemma1 (l: list Ascii.ascii): (map Ascii.ascii_of_byte (map Ascii.byte_of_ascii l)) = l.
@@ -82,9 +83,20 @@ Lemma lemma8 (n: nat) (v: Vector.t bool n) (k: nat) : Bv2N (Vector.append v (Bve
 Proof.
 Admitted.
 
+Lemma lemma9 {n: N} {size: Size} (H: (n < Z.to_N (int_stop size Unsigned))%N) :
+  size*8 >= N.size_nat n.
+Proof.
+unfold int_stop in H.
+destruct n as [|p]. { simpl. lia. }
+assert (Pos.size_nat p <= size * 8).
+apply (proj1 (@Zpower2_Psize (size*8) p)).
+- lia.
+- auto.
+Qed.
+
 Lemma lemma6 (size: Size) (n: N) (H: (n < Z.to_N (int_stop size Unsigned))%N) : Bv2N (N2Bv_sized (size * 8) n) = n.
 Proof.
-assert (size*8 >= N.size_nat n) as H2. { admit. }
+assert (size*8 >= N.size_nat n) as H2. { apply (lemma9 H). }
 assert (exists k, size*8 = N.size_nat n + k) as H3. {
   exists (size*8 - N.size_nat n). lia.
 }
@@ -94,7 +106,7 @@ rewrite Hk.
 rewrite (N2Bv_N2Bv_sized_above n k).
 rewrite lemma8.
 apply Bv2N_N2Bv.
-Admitted.
+Qed.
 
 Lemma destruct_int_in_range (i: Int) (size: Size) (signed: Signedness) (P: int_in_range i size signed = true) :
 (i >= int_start size signed)%Z /\ (i < int_stop size signed)%Z.
