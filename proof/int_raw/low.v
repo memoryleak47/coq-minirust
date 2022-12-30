@@ -8,7 +8,6 @@ Require Import ZArith.
 Require Import Zpow_facts.
 Require Import Lia.
 
-(* used in conjunction with @Eqdep_dec.eq_rect_eq_dec. *)
 Lemma vector_retype {T O: Type} {n: nat} (f: forall n, Vector.t T n -> O) (v: Vector.t T n) (m:nat) :
   forall (P: n=m), f n v = f m (eq_rect n (Vector.t T) v m P).
 Proof.
@@ -19,8 +18,9 @@ reflexivity.
 apply PeanoNat.Nat.eq_dec.
 Qed.
 
-Lemma lemma4 {T O: Type} {n:nat} (v:Vector.t T n) (f : forall n, Vector.t T n -> O) :
-f _ (Vector.of_list (Vector.to_list v)) = f n v.
+Lemma of_list_to_list {T O: Type} {n:nat} (v:Vector.t T n) (f : forall n, Vector.t T n -> O) :
+  f _ (Vector.of_list (Vector.to_list v)) = f n v.
+Proof.
 rewrite (vector_retype f _ n (Vector.length_to_list _ _ _)).
 rewrite Vector.of_list_to_list_opp.
 reflexivity.
@@ -93,7 +93,7 @@ induction n as [|n IH].
   reflexivity.
 Qed.
 
-Lemma lemma7 (n: nat) : (2 ^ (N.of_nat n))%N = N.shiftl_nat 1 n.
+Lemma shift_exp (n: nat) : (2 ^ (N.of_nat n))%N = N.shiftl_nat 1 n.
 induction n as [|n IH].
 - reflexivity.
 - replace ((2 ^ N.of_nat (S n))%N) with (2 * (2 ^ N.of_nat n))%N.
@@ -105,7 +105,7 @@ induction n as [|n IH].
    lia.
 Qed.
 
-Lemma lemma8 (n: nat) (v: Vector.t bool n) (k: nat) : Bv2N (Vector.append v (Bvector.Bvect_false k)) = Bv2N v.
+Lemma bv2n_ignore_false_suffix (n: nat) (v: Vector.t bool n) (k: nat) : Bv2N (Vector.append v (Bvector.Bvect_false k)) = Bv2N v.
 Proof.
 induction n as [|n IHn].
 
@@ -122,7 +122,7 @@ induction n as [|n IHn].
 -- simpl. rewrite IHn. reflexivity.
 Qed.
 
-Lemma lemma9 {n: N} {size: Size} (H: (n < Z.to_N (int_stop size Unsigned))%N) :
+Lemma in_range_size_nat {n: N} {size: Size} (H: (n < Z.to_N (int_stop size Unsigned))%N) :
   size*8 >= N.size_nat n.
 Proof.
 unfold int_stop in H.
@@ -133,9 +133,9 @@ apply (proj1 (@Zpower2_Psize (size*8) p)).
 - auto.
 Qed.
 
-Lemma lemma6 (size: Size) (n: N) (H: (n < Z.to_N (int_stop size Unsigned))%N) : Bv2N (N2Bv_sized (size * 8) n) = n.
+Lemma bv2n_n2bv (size: Size) (n: N) (H: (n < Z.to_N (int_stop size Unsigned))%N) : Bv2N (N2Bv_sized (size * 8) n) = n.
 Proof.
-assert (size*8 >= N.size_nat n) as H2. { apply (lemma9 H). }
+assert (size*8 >= N.size_nat n) as H2. { apply (in_range_size_nat H). }
 assert (exists k, size*8 = N.size_nat n + k) as H3. {
   exists (size*8 - N.size_nat n). lia.
 }
@@ -143,7 +143,7 @@ clear H2.
 destruct H3 as [k Hk].
 rewrite Hk.
 rewrite (N2Bv_N2Bv_sized_above n k).
-rewrite lemma8.
+rewrite bv2n_ignore_false_suffix.
 apply Bv2N_N2Bv.
 Qed.
 
@@ -181,7 +181,7 @@ apply (proj2 (Z.ltb_lt (Z.of_N _) _)).
 replace (2 ^ (Z.of_nat size * 8))%Z with (Z.of_N (2 ^ ((N.of_nat size) * 8))); try lia.
 - apply (proj1 (N2Z.inj_lt (ByteV2N _) _)).
   replace (N.of_nat size * 8)%N with (N.of_nat (size * 8)); try lia.
-  rewrite lemma7.
+  rewrite shift_exp.
   assert (length (map Ascii.ascii_of_byte l) = size) as F. {
     rewrite (@map_length _ _ Ascii.ascii_of_byte).
     assumption.
@@ -197,14 +197,14 @@ Lemma rt1_uint_le (size: Size) (int: Int) (H: int_in_range int size Unsigned = t
 Proof.
 unfold decode_uint_le, encode_uint_le.
 rewrite ascii_rt1.
-rewrite lemma4.
+rewrite of_list_to_list.
 unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
 rewrite bvec_rt1.
 destruct (destruct_int_in_range _ _ _ H) as [H0 H1].
 unfold int_start in H0.
-rewrite lemma6.
+rewrite bv2n_n2bv.
 - rewrite Znat.Z2N.id. { reflexivity. }
   lia.
 - apply Z2N.inj_lt.
