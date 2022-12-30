@@ -20,14 +20,10 @@ destruct signedness, (int >=? 0)%Z.
 - exists (encode_uint_le size int). reflexivity.
 Qed.
 
-Lemma z_to_nat_exp (n: nat) : (2 ^ Z.of_nat n)%Z = Z.of_nat (2 ^ n).
+Lemma h1 (a b : Z) : (a < b)%Z -> (b > 0)%Z -> (2 ^ a < 2 ^ b)%Z.
 Proof.
-induction n as [|n IH].
-- reflexivity.
-- rewrite Nat.pow_succ_r.
-  replace (Z.of_nat (S n)) with (Z.succ (Z.of_nat n)); cycle 1. { lia. }
-  rewrite Z.pow_succ_r; try lia.
-lia.
+intros A B.
+apply Z.pow_lt_mono_r; lia.
 Qed.
 
 Lemma lemma2 (int: Int) (size: Size) (H: int_in_range int size Signed = true) (H2 : (int >=? 0)%Z = true) :
@@ -45,16 +41,28 @@ assert ((Z.of_nat (S size) * 8)%Z = Z.of_nat ((S size) * 8)) as A. { lia. }
 rewrite A. clear A.
 assert ((Z.of_nat ((S size) * 8) - 1)%Z = Z.of_nat ((S size) * 8 - 1)) as A. { lia. }
 rewrite A. clear A.
-do 2 rewrite z_to_nat_exp.
-apply inj_lt.
-apply Nat.pow_lt_mono_r. { lia. }
-lia.
+apply h1; lia.
 Qed.
 
 Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_range int size Signed = true) :
   int_in_range (int + signed_offset size)%Z size Unsigned = true.
 Proof.
 unfold int_in_range. destruct (destruct_int_in_range H2).
+unfold int_start,int_stop,signed_offset.
+replace ((int + 2 ^ (Z.of_nat size * 8) <?
+  2 ^ (Z.of_nat size * 8))%Z)%bool with true; cycle 1.
+assert (int <? 0 = true)%Z. { lia. }
+lia.
+
+replace (int + 2 ^ (Z.of_nat size * 8) >=? 0)%Z with true; cycle 1.
+- unfold int_start in H.
+  assert (int + 2 ^ (Z.of_nat size * 8) >= 0)%Z.
+  assert (forall a b c, a >= b -> b+c >= 0 -> a+c >= 0)%Z as H3. { lia. }
+  apply (H3 int (- 2 ^ (Z.of_nat size * 8 - 1) )%Z _).
+-- lia.
+-- admit.
+-- lia.
+- simpl. reflexivity.
 Admitted.
 
 Lemma lemma4 (size: Size) (int: Int)
@@ -62,6 +70,7 @@ Lemma lemma4 (size: Size) (int: Int)
   true = (
         int + 2 ^ (Z.of_nat size * 8)
     >=? 2 ^ (Z.of_nat size * 8 - 1))%Z.
+Proof.
 Admitted.
 
 Lemma rt1_int_le (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
