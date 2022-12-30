@@ -26,14 +26,14 @@ rewrite Vector.of_list_to_list_opp.
 reflexivity.
 Qed.
 
-Lemma rewrite_empty_vector (v: Vector.t bool 0) : v = Vector.nil bool.
+Lemma rewrite_empty_vector {T: Type} (v: Vector.t T 0) : v = Vector.nil T.
 Proof.
-apply (@Vector.case0 bool (fun v => v = Vector.nil bool)).
+apply (@Vector.case0 T (fun v => v = Vector.nil T)).
 reflexivity.
 Qed.
 
-Lemma rewrite_non_empty_vector {n: nat} (v: Vector.t bool (S n)) :
-  exists h t, v = Vector.cons bool h n t.
+Lemma rewrite_non_empty_vector {T:Type} {n: nat} (v: Vector.t T (S n)) :
+  exists h t, v = Vector.cons T h n t.
 Proof.
 induction n,v using Vector.caseS.
 - exists h, v. reflexivity.
@@ -49,7 +49,7 @@ rewrite Ascii.ascii_of_byte_of_ascii.
 reflexivity.
 Qed.
 
-Lemma lemma5 (n: nat) (v: Vector.t bool (n*8)): ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
+Lemma bvec_rt1 (n: nat) (v: Vector.t bool (n*8)): ByteVector.to_Bvector (ByteVector.of_Bvector v) = v.
 Proof.
 induction n as [|n IH].
 - simpl in v.
@@ -67,6 +67,20 @@ induction n as [|n IH].
   simpl.
   rewrite IH.
   auto.
+Qed.
+
+Lemma bvec_rt2 (n: nat) (v: Vector.t Ascii.ascii n): ByteVector.of_Bvector (ByteVector.to_Bvector v) = v.
+Proof.
+induction n as [|n IH].
+- simpl in v.
+  apply Vector.case0.
+  simpl. reflexivity.
+- simpl in v.
+  destruct (rewrite_non_empty_vector v) as [b [tl H]]. rewrite H. clear v H.
+  destruct b.
+  simpl.
+  rewrite IH.
+  reflexivity.
 Qed.
 
 Lemma lemma7 (n: nat) : (2 ^ (N.of_nat n))%N = N.shiftl_nat 1 n.
@@ -177,7 +191,7 @@ rewrite lemma4.
 unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
-rewrite lemma5.
+rewrite bvec_rt1.
 destruct (destruct_int_in_range _ _ _ H) as [H0 H1].
 unfold int_start in H0.
 rewrite lemma6.
@@ -210,4 +224,5 @@ assert (length a1 * 8 = size * 8) as Hlen. {
 }
 rewrite (vector_retype _ a3 (size * 8) Hlen).
 rewrite (N2Bv_sized_Bv2N (size * 8) _).
+rewrite <- Ha3. clear Ha3 a3.
 Abort.
