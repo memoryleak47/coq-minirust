@@ -17,7 +17,13 @@ Admitted.
 Lemma encode_int_no {size: Size} {signedness: Signedness} {int: Int} (H: int_in_range int size signedness = false) :
   encode_int_raw size signedness int = None.
 Proof.
-Admitted.
+unfold encode_int_raw.
+destruct ENDIANNESS;
+unfold encode_int_le;
+rewrite H;
+simpl;
+reflexivity.
+Qed.
 
 (* decode yes, no *)
 Lemma decode_int_yes {size: Size} {signedness: Signedness} {l: list byte} (H: length l = size) :
@@ -28,7 +34,22 @@ Admitted.
 Lemma decode_int_no {size: Size} {signedness: Signedness} {l: list byte} (H: length l <> size) :
   decode_int_raw size signedness l = None.
 Proof.
-Admitted.
+unfold decode_int_raw.
+assert (length l =? size = false) as R. {
+  apply (proj2 (Nat.eqb_neq _ _ )).
+  assumption.
+}
+assert (length (rev l) =? size = false) as R'. {
+  rewrite rev_length.
+  apply (proj2 (Nat.eqb_neq _ _ )).
+  assumption.
+}
+destruct ENDIANNESS;
+unfold decode_int_le;
+try (rewrite R || rewrite R');
+simpl;
+reflexivity.
+Qed.
 
 (* roundtrip properties *)
 
