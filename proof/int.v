@@ -1,4 +1,4 @@
-Require Import defs encoding thm lemma wf int_encoding high.
+Require Import defs encoding thm lemma wf int_encoding high low.
 Require Import Coq.Init.Byte.
 Require Import List.
 Require Import ZArith.
@@ -8,6 +8,18 @@ Lemma wf_int {size: Size} {signedness: Signedness} (Hwf: wf (TInt size signednes
   size > 0.
 Admitted.
 
+Inductive IntPair : Size -> Signedness -> Value -> list AbstractByte -> Prop :=
+ | mkIntPair {size: Size} {signedness: Signedness} {i: Int} {l: list AbstractByte} :
+  length l = size -> int_in_range i size signedness = true ->
+  (decode (TInt size signedness) l = Some (VInt i)) -> (encode (TInt size signedness) (VInt i) = Some l) -> IntPair size signedness (VInt i) l.
+
+Lemma lemma1 bl : length (wrap_abstract bl None) = length bl.
+Proof.
+induction bl as [|b bl IH].
+- reflexivity.
+- simpl. f_equal. rewrite IH. reflexivity.
+Qed.
+
 Lemma unwrap_wrap l : forall p, unwrap_abstract (wrap_abstract l p) = Some l.
 Proof.
 intros p.
@@ -16,11 +28,42 @@ induction l as [|b l IH].
 - simpl. rewrite IH. simpl. reflexivity.
 Qed.
 
-Inductive ValidInt : Size -> Signedness -> Value -> Type :=
-  | mkValidInt {size: Size} {signedness: Signedness} {i: Int} (HR: (int_in_range i size signedness) = true) : ValidInt size signedness (VInt i).
+Lemma encode_int_pair {size: Size} {signedness: Signedness} {v: Value} {l: list AbstractByte} (H: encode (TInt size signedness) v = Some l) :
+  (size > 0) -> 
+  IntPair size signedness v l.
+Proof.
+intros Hs.
+(* storing this equation for later, H will be manipulated *)
+assert (encode (TInt size signedness) v = Some l) as Henc. { exact H. }
+unfold encode,encode_int in H.
+destruct v; try discriminate H.
+simpl in H.
+destruct (int_in_range i size signedness) eqn:HR; cycle 1. {
+  rewrite (encode_int_none HR) in H. simpl in H. discriminate H.
+}
+destruct (rt1_int size signedness i HR Hs) as [bl [H1 [H2 H3]]].
+assert (wrap_abstract bl None = l) as Hlbl. {
+  rewrite <- H1 in H. simpl in H.
+  inversion H.
+  reflexivity.
+}
+rewrite <- Hlbl.
+rewrite <- Hlbl in H, Henc. clear l Hlbl.
+assert (length (wrap_abstract bl None) = size). {
+  rewrite lemma1. assumption.
+}
+
+destruct (mk_var (decode (TInt size signedness) (wrap_abstract bl None))) as [d Hd].
+assert (decode (TInt size signedness) (wrap_abstract bl None) = d) as Hd'. { assumption. }
+unfold decode,decode_int in Hd.
+rewrite unwrap_wrap in Hd. simpl in Hd.
+rewrite H2 in Hd. simpl in Hd.
+rewrite <- Hd in Hd'.
+apply mkIntPair; assumption.
+Qed.
 
 Lemma valid_int {size: Size} {signedness: Signedness} {v: Value} (H: is_valid_for (TInt size signedness) v) :
-  ValidInt size signedness v.
+  exists (l: list AbstractByte), IntPair size signedness v l.
 Proof.
 unfold is_valid_for in H.
 Fail destruct H. (* why does this fail? *)
