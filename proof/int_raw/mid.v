@@ -150,7 +150,7 @@ Qed.
 Lemma rt1_int_le (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
   (size > 0) ->
   exists l, Some l = encode_int_le size signedness int /\
-  decode_int_le size signedness l = Some int.
+  decode_int_le size signedness l = Some int /\ length l = size.
 Proof.
 intros Hs.
 destruct signedness.
@@ -162,40 +162,48 @@ destruct signedness.
 unfold encode_int_le. rewrite H. simpl.
 rewrite E.
 split. { reflexivity. }
-unfold decode_int_le.
-rewrite (uint_le_encode_valid).
-rewrite Nat.eqb_refl.
-simpl.
-f_equal.
-replace ((decode_uint_le size (encode_uint_le size int) >=?
-   2 ^ (Z.of_nat size * 8 - 1))%Z) with false.
-apply rt1_uint_le.
-apply (lemma2 _ _ H); try lia; try assumption.
-rewrite rt1_uint_le.
-destruct (destruct_int_in_range H).
-unfold int_stop in H1.
-lia.
-apply (lemma2 _ _ H); lia.
-apply (lemma2 _ _ H); lia.
+split.
+++ unfold decode_int_le.
+   destruct (mk_var (lemma2 _ _ H E Hs)) as [HR _].
+   rewrite (uint_le_encode_valid); try apply HR.
+   f_equal.
+   rewrite Nat.eqb_refl.
+   replace (decode_uint_le size (encode_uint_le size int) >=?
+      int_stop size Signed)%Z with false. {
+     simpl. f_equal.
+     apply rt1_uint_le.
+     apply HR; try lia; try assumption.
+   }
+   rewrite rt1_uint_le; try apply HR.
+   destruct (destruct_int_in_range H).
+   to_base. to_base_in H0. to_base_in H1. to_base_in HR.
+   lia.
+++ apply uint_le_encode_valid.
+   apply (lemma2 _ _ H); lia.
 
 (* signed, negative *)
 -- exists (encode_uint_le size (int + signed_offset size)%Z).
 split.
 --- unfold encode_int_le. rewrite H,E. simpl. reflexivity.
---- unfold decode_int_le. simpl.
+--- unfold decode_int_le.
     rewrite rt1_uint_le.
     destruct (destruct_int_in_range (lemma3 _ _ E H Hs)) as [H0 H1].
 ---- rewrite uint_le_encode_valid.
      rewrite Nat.eqb_refl.
-     simpl. f_equal.
-     replace (int + signed_offset size >=? 2 ^ (Z.of_nat size * 8 - 1))%Z with true.
-     lia.
+     f_equal.
+     split; try reflexivity.
+     replace (int + signed_offset size >=?
+        int_stop size Signed)%Z with true.
      destruct (destruct_int_in_range H) as [Hs0 Hs1].
-     unfold int_start in Hs0.
-     unfold signed_offset.
-     apply lemma4.
-     assumption.
-     apply (lemma3 _ _ E H Hs).
+     to_base. to_base_in H0. to_base_in H1. to_base_in Hs0. to_base_in Hs1.
+     simpl. f_equal. lia.
+
+     destruct (destruct_int_in_range H) as [Hs0 Hs1]. (* this is redundant *)
+     to_base. to_base_in H0. to_base_in H1. to_base_in Hs0. to_base_in Hs1.
+     lia.
+
+     to_base. to_base_in H0. to_base_in H1. to_base_in Hs0. to_base_in Hs1.
+     lia.
 ---- apply (lemma3 _ _ E H Hs).
 
 (* unsigned *)
@@ -206,6 +214,7 @@ unfold decode_int_le.
 rewrite (uint_le_encode_valid).
 rewrite Nat.eqb_refl.
 simpl.
+f_equal. split; try reflexivity.
 f_equal.
 apply rt1_uint_le.
 assumption.
@@ -215,7 +224,8 @@ Qed.
 Lemma rt2_int_le (size: Size) (signedness: Signedness) (l: list byte) (H: length l = size) :
   (size > 0) ->
   exists int, Some int = decode_int_le size signedness l /\
-  encode_int_le size signedness int = Some l.
+  encode_int_le size signedness int = Some l /\
+  int_in_range int size signedness = true.
 Proof.
 intros Hs.
 destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewrite Nat.eqb_refl; simpl.
@@ -230,6 +240,8 @@ destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewri
    simpl. f_equal.
    assert (forall x y, x - y + y = x)%Z as F. { lia. }
    rewrite F.
+   split; try reflexivity.
+   f_equal.
    apply rt2_uint_le.
    assumption.
 
@@ -241,7 +253,7 @@ destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewri
    split. { reflexivity. }
    simpl.
    rewrite rt2_uint_le.
---- reflexivity.
+--- split; reflexivity.
 --- assumption.
 
 (* unsigned *)
@@ -250,6 +262,6 @@ destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewri
   rewrite uint_le_decode_valid; try assumption.
   simpl.
   rewrite rt2_uint_le.
--- reflexivity.
+-- split; reflexivity.
 -- assumption.
 Qed.
