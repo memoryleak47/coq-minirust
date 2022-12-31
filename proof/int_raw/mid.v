@@ -151,4 +151,26 @@ Lemma rt2_int_le (size: Size) (signedness: Signedness) (l: list byte) (H: length
 exists int, Some int = decode_int_le size signedness l /\
 encode_int_le size signedness int = Some l.
 Proof.
+destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewrite Nat.eqb_refl; simpl.
+- destruct ((decode_uint_le size l) >=? int_stop size Signed)%Z eqn:E'.
+(* signed, negative *)
+-- exists ((decode_uint_le size l) - signed_offset size)%Z.
+   unfold int_stop in E'. rewrite E'.
+   split. { reflexivity. }
+   admit.
+
+(* signed, positive *)
+-- exists (decode_uint_le size l).
+   unfold int_stop in E'. rewrite E'.
+   split. { reflexivity. }
+   admit.
+
+(* unsigned *)
+- exists (decode_uint_le size l).
+  split. { reflexivity. }
+  rewrite uint_le_decode_valid; try assumption.
+  simpl.
+  rewrite rt2_uint_le.
+-- reflexivity.
+-- assumption.
 Admitted.
