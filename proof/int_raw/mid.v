@@ -97,8 +97,15 @@ Lemma lemma6 (d: Int) (size: Size) :
 Admitted.
 
 Lemma lemma7 (size: Size) (l: list byte) :
+  (length l = size) ->
   (decode_uint_le size l >=? 0)%Z = true.
-Admitted.
+Proof.
+intros H.
+Check uint_le_decode_valid.
+destruct (destruct_int_in_range (uint_le_decode_valid size l H)) as [H0 _].
+unfold int_start in H0.
+lia.
+Qed.
 
 Lemma lemma8 (d: Int) (size: Size) :
   (d >=? int_stop size Signed)%Z = false ->
@@ -190,8 +197,8 @@ destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewri
 
 (* signed, positive *)
 -- exists (decode_uint_le size l).
-   rewrite lemma7.
-   rewrite lemma8; try (assumption || apply lemma7).
+   rewrite lemma7; try assumption.
+   rewrite lemma8; try (assumption || (apply lemma7; assumption)).
    unfold int_stop in E'. rewrite E'.
    split. { reflexivity. }
    simpl.
