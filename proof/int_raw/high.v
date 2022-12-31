@@ -7,6 +7,31 @@ Require Import Ndigits.
 Require Import ZArith.
 Require Import Lia.
 
+(* encode yes, no *)
+
+Lemma encode_int_yes {size: Size} {signedness: Signedness} {int: Int} (H: int_in_range int size signedness = true) :
+  exists l, Some l = encode_int_raw size signedness int /\ length l = size.
+Proof.
+Admitted.
+
+Lemma encode_int_no {size: Size} {signedness: Signedness} {int: Int} (H: int_in_range int size signedness = false) :
+  encode_int_raw size signedness int = None.
+Proof.
+Admitted.
+
+(* decode yes, no *)
+Lemma decode_int_yes {size: Size} {signedness: Signedness} {l: list byte} (H: length l = size) :
+  exists i, Some i = decode_int_raw size signedness l /\ int_in_range i size signedness = true.
+Proof.
+Admitted.
+
+Lemma decode_int_no {size: Size} {signedness: Signedness} {l: list byte} (H: length l <> size) :
+  decode_int_raw size signedness l = None.
+Proof.
+Admitted.
+
+(* roundtrip properties *)
+
 Lemma rt1_int (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
   (size > 0) ->
   exists l, Some l = encode_int_raw size signedness int /\
