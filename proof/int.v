@@ -1,4 +1,4 @@
-Require Import defs encoding thm lemma wf int_encoding high low.
+Require Import defs encoding thm lemma wf int_encoding high low le.
 Require Import Coq.Init.Byte.
 Require Import List.
 Require Import ZArith.
@@ -6,6 +6,12 @@ Import ListNotations.
 
 Lemma wf_int {size: Size} {signedness: Signedness} (Hwf: wf (TInt size signedness)) :
   size > 0.
+Admitted.
+
+Lemma lemma1 bl l :
+  unwrap_abstract l = Some bl ->
+  le (wrap_abstract bl None) l.
+Proof.
 Admitted.
 
 Inductive IntPair : Size -> Signedness -> Value -> list AbstractByte -> Prop :=
@@ -156,10 +162,27 @@ Lemma int_rt1 (size: Size) (signedness: Signedness) : rt1 (TInt size signedness)
 Proof.
 intros Hwf v Hval.
 set (Hs := wf_int Hwf).
-destruct (valid_int Hval).
+destruct (valid_int Hval) as [l A]. { apply Hs. }
+destruct A.
 simpl. unfold encode_int.
-destruct (rt1_int size signedness i HR Hs) as [l [Henc [Hl H2]]].
-exists (wrap_abstract l None).
+destruct (rt1_int size signedness i H2 Hs) as [bl' [Henc [Hdec Hlen]]].
+assert (bl = bl'). {
+  unfold encode,encode_int in H4.
+  simpl in H4.
+  rewrite <- Henc in H4.
+  simpl in H4.
+  inversion H4.
+  assert (unwrap_abstract (wrap_abstract bl' None) = unwrap_abstract (wrap_abstract bl None)). {
+    f_equal. assumption.
+  }
+  do 2 rewrite unwrap_wrap in H5.
+  inversion H5.
+  reflexivity.
+}
+rewrite <- H5 in Hlen,Hdec,Henc. clear bl' H5.
+
+exists (wrap_abstract bl None).
+simpl.
 split.
 - simpl.
   rewrite <- Henc.
@@ -168,7 +191,7 @@ split.
 - unfold decode_int.
   rewrite unwrap_wrap.
   simpl.
-  rewrite Hl.
+  rewrite Hdec.
   simpl.
   reflexivity.
 Qed.
@@ -176,29 +199,31 @@ Qed.
 Lemma int_rt2 (size: Size) (signedness: Signedness) : rt2 (TInt size signedness).
 Proof.
 intros Hwf l v.
-intros Hdec.
-assert (is_valid_for (TInt size signedness) v) as Hval. {
- unfold is_valid_for.
- exists l. assumption.
-}
-destruct (valid_int Hval).
 set (Hs := wf_int Hwf).
-destruct (unwrap_abstract l) as [bl|] eqn:E; cycle 1. {
-  exfalso.
-  unfold decode,decode_int in Hdec.
-  rewrite E in Hdec.
-  discriminate Hdec.
-}
+intros Hdec.
+destruct (decode_int_pair Hdec). { apply Hs. }
+
 exists (wrap_abstract bl None).
-assert (length bl = size). { admit. }
+
 destruct (rt2_int size signedness bl) as [i' [Hdec' [Henc' HR']]]; try assumption.
-assert (i = i') as Hii'. { admit. }
-rewrite <- Hii' in Hdec',Henc',HR'. clear Hii' i' HR'.
+assert (i=i'). {
+  unfold decode,decode_int in H3.
+  rewrite H in H3.
+  simpl in H3.
+  rewrite <- Hdec' in H3.
+  simpl in H3.
+  inversion H3.
+  reflexivity.
+}
+rewrite <- H5 in Hdec', Henc', HR'.
+clear H5 i' HR'.
+
 split.
 - unfold encode,encode_int.
   simpl.
   rewrite Henc'.
   simpl.
   reflexivity.
-- admit.
-Admitted.
+- apply lemma1.
+  assumption.
+Qed.
