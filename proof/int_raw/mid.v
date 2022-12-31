@@ -84,6 +84,28 @@ rewrite <- (Z.pow_succ_r 2); try lia.
 replace (Z.succ (Z.pos p - 1))%Z with (Z.pos p); lia.
 Qed.
 
+Lemma lemma5 (d: Int) (size: Size) :
+  ((d >=? int_stop size Signed)%Z = true) ->
+  (int_in_range d size Unsigned = true) ->
+  (int_in_range (d - signed_offset size)%Z size Signed) = true.
+Proof.
+Admitted.
+
+Lemma lemma6 (d: Int) (size: Size) :
+  (int_in_range d size Unsigned = true) ->
+  (d - signed_offset size >=? 0)%Z = false.
+Admitted.
+
+Lemma lemma7 (size: Size) (l: list byte) :
+  (decode_uint_le size l >=? 0)%Z = true.
+Admitted.
+
+Lemma lemma8 (d: Int) (size: Size) :
+  (d >=? int_stop size Signed)%Z = false ->
+  (d >=? 0)%Z = true ->
+  (int_in_range d size Signed) = true.
+Admitted.
+
 Lemma rt1_int_le (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
 exists l, Some l = encode_int_le size signedness int /\
 decode_int_le size signedness l = Some int.
@@ -147,18 +169,6 @@ assumption.
 assumption.
 Qed.
 
-Lemma lemma5 (d: Int) (size: Size) :
-  ((d >=? int_stop size Signed)%Z = true) ->
-  (int_in_range d size Unsigned = true) ->
-  (int_in_range (d - signed_offset size)%Z size Signed) = true.
-Proof.
-Admitted.
-
-Lemma lemma6 (d: Int) (size: Size) :
-  (int_in_range d size Unsigned = true) ->
-  (d - signed_offset size >=? 0)%Z = false.
-Admitted.
-
 Lemma rt2_int_le (size: Size) (signedness: Signedness) (l: list byte) (H: length l = size) :
 exists int, Some int = decode_int_le size signedness l /\
 encode_int_le size signedness int = Some l.
@@ -180,9 +190,14 @@ destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewri
 
 (* signed, positive *)
 -- exists (decode_uint_le size l).
+   rewrite lemma7.
+   rewrite lemma8; try (assumption || apply lemma7).
    unfold int_stop in E'. rewrite E'.
    split. { reflexivity. }
-   admit.
+   simpl.
+   rewrite rt2_uint_le.
+--- reflexivity.
+--- assumption.
 
 (* unsigned *)
 - exists (decode_uint_le size l).
@@ -192,4 +207,4 @@ destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewri
   rewrite rt2_uint_le.
 -- reflexivity.
 -- assumption.
-Admitted.
+Qed.
