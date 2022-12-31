@@ -85,6 +85,7 @@ replace (Z.succ (Z.pos p - 1))%Z with (Z.pos p); lia.
 Qed.
 
 Lemma lemma5 (d: Int) (size: Size) :
+  (size > 0) ->
   ((d >=? int_stop size Signed)%Z = true) ->
   (int_in_range d size Unsigned = true) ->
   (int_in_range (d - signed_offset size)%Z size Signed) = true.
@@ -92,6 +93,7 @@ Proof.
 Admitted.
 
 Lemma lemma6 (d: Int) (size: Size) :
+  (size > 0) ->
   (int_in_range d size Unsigned = true) ->
   (d - signed_offset size >=? 0)%Z = false.
 Admitted.
@@ -108,6 +110,7 @@ lia.
 Qed.
 
 Lemma lemma8 (d: Int) (size: Size) :
+  (size > 0) ->
   (d >=? int_stop size Signed)%Z = false ->
   (d >=? 0)%Z = true ->
   (int_in_range d size Signed) = true.
@@ -177,16 +180,18 @@ assumption.
 Qed.
 
 Lemma rt2_int_le (size: Size) (signedness: Signedness) (l: list byte) (H: length l = size) :
-exists int, Some int = decode_int_le size signedness l /\
-encode_int_le size signedness int = Some l.
+  (size > 0) ->
+  exists int, Some int = decode_int_le size signedness l /\
+  encode_int_le size signedness int = Some l.
 Proof.
+intros Hs.
 destruct signedness; unfold decode_int_le,encode_int_le; simpl; rewrite H; rewrite Nat.eqb_refl; simpl.
 - destruct ((decode_uint_le size l) >=? int_stop size Signed)%Z eqn:E'.
 
 (* signed, negative *)
 -- exists ((decode_uint_le size l) - signed_offset size)%Z.
    rewrite lemma5; try assumption; try (apply uint_le_decode_valid; assumption).
-   rewrite lemma6; try (apply uint_le_decode_valid; assumption).
+   rewrite lemma6; try (apply uint_le_decode_valid; assumption); try assumption.
    unfold int_stop in E'. rewrite E'.
    split. { reflexivity. }
    simpl. f_equal.
