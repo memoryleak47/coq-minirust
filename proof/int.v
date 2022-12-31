@@ -57,4 +57,30 @@ Qed.
 
 Lemma int_rt2 (size: Size) (signedness: Signedness) : rt2 (TInt size signedness).
 Proof.
+intros Hwf l v.
+intros Hdec.
+assert (is_valid_for (TInt size signedness) v) as Hval. {
+ unfold is_valid_for.
+ exists l. assumption.
+}
+destruct (valid_int Hval).
+set (Hs := wf_int Hwf).
+destruct (unwrap_abstract l) as [bl|] eqn:E; cycle 1. {
+  exfalso.
+  unfold decode,decode_int in Hdec.
+  rewrite E in Hdec.
+  discriminate Hdec.
+}
+exists (wrap_abstract bl None).
+assert (length bl = size). { admit. }
+destruct (rt2_int size signedness bl) as [i' [Hdec' [Henc' HR']]]; try assumption.
+assert (i = i') as Hii'. { admit. }
+rewrite <- Hii' in Hdec',Henc',HR'. clear Hii' i' HR'.
+split.
+- unfold encode,encode_int.
+  simpl.
+  rewrite Henc'.
+  simpl.
+  reflexivity.
+- admit.
 Admitted.
