@@ -40,20 +40,19 @@ intros Hwf v Hval.
 set (Hs := wf_int Hwf).
 destruct (valid_int Hval).
 simpl. unfold encode_int.
-destruct (encode_int_yes HR) as [l [Henc Hl]].
-simpl.
-rewrite <- Henc.
+destruct (rt1_int size signedness i HR Hs) as [l [Henc [Hl H2]]].
 exists (wrap_abstract l None).
-simpl.
-split. { reflexivity. }
-unfold decode_int.
-rewrite unwrap_wrap.
-simpl.
-destruct (rt1_int size signedness i HR Hs) as [l' [Hl' Hdec]].
-assert (l = l') as HL. { rewrite <- Henc in Hl'. inversion Hl'. reflexivity. }
-rewrite <- HL in Hdec. clear l' HL Hl'.
-rewrite Hdec.
-reflexivity.
+split.
+- simpl.
+  rewrite <- Henc.
+  simpl.
+  reflexivity.
+- unfold decode_int.
+  rewrite unwrap_wrap.
+  simpl.
+  rewrite Hl.
+  simpl.
+  reflexivity.
 Qed.
 
 Lemma int_rt2 (size: Size) (signedness: Signedness) : rt2 (TInt size signedness).
