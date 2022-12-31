@@ -7,24 +7,23 @@ Require Import Ndigits.
 Require Import ZArith.
 Require Import Lia.
 
+(* TODO cleanup this file. There are a lot of things, that can be simplified using the basenum abstraction. *)
+
 (* every other number relevant for `int_in_range` can be expressed neatly using basenum. *)
 Definition basenum (size: Size) := (2 ^ (Z.of_nat size*8-1))%Z.
 
-Lemma large_base (size: Size) :
-  (size > 0) -> (basenum size > 4)%Z.
+Lemma double_base {size: Size} (H: size > 0) :
+  (2 ^ (Z.of_nat size * 8))%Z = ((basenum size) * 2)%Z.
 Proof.
-intros Hs.
 unfold basenum.
-assert (Z.of_nat size * 8 - 1 < 2 ^ (Z.of_nat size * 8 - 1))%Z as F. {
-  apply Zpow_facts.Zpower2_lt_lin.
-  lia.
-}
-lia.
+destruct (mk_var (Z.of_nat size * 8))%Z as [x Hx].
+assert (x > 0)%Z as B. { lia. }
+rewrite Hx. clear - x B.
+destruct x; try (simpl; lia).
+assert (2^(Z.pos p) = 2 * 2^(Z.pos p-1))%Z; try lia.
+rewrite <- (Z.pow_succ_r 2); try lia.
+replace (Z.succ (Z.pos p - 1))%Z with (Z.pos p); lia.
 Qed.
-
-Lemma h2 (size: Size) : (2 ^ (Z.of_nat size * 8))%Z = ((basenum size) * 2)%Z.
-Proof.
-Admitted.
 
 Lemma start_to_base (size: Size) (signedness: Signedness) :
   int_start size signedness = match signedness with
@@ -38,34 +37,37 @@ destruct signedness; unfold int_start.
 Qed.
 
 Lemma stop_to_base (size: Size) (signedness: Signedness) :
+  (size > 0) ->
   int_stop size signedness = match signedness with
   | Unsigned => ((basenum size) * 2)%Z
   | Signed => basenum size
   end.
 Proof.
+intros Hs.
 destruct signedness; unfold int_stop,basenum.
 - reflexivity.
-- apply h2.
+- apply (double_base Hs).
 Qed.
 
 Lemma offset_to_base (size: Size) :
+  (size > 0) ->
   signed_offset size = ((basenum size) * 2)%Z.
 Proof.
-apply h2.
+apply double_base.
 Qed.
 
 Ltac to_base := repeat (
   unfold int_in_range ||
-  rewrite stop_to_base ||
-  rewrite start_to_base ||
-  rewrite offset_to_base
+  (rewrite stop_to_base; try assumption) ||
+  (rewrite start_to_base; try assumption) ||
+  (rewrite offset_to_base; try assumption)
 ).
 
 Ltac to_base_in x := repeat (
   unfold int_in_range in x ||
-  rewrite stop_to_base in x ||
-  rewrite start_to_base in x ||
-  rewrite offset_to_base in x
+  (rewrite stop_to_base in x; try assumption) ||
+  (rewrite start_to_base in x; try assumption) ||
+  (rewrite offset_to_base in x; try assumption)
 ).
 
 Lemma lemma2 (int: Int) (size: Size) (H: int_in_range int size Signed = true) (H2 : (int >=? 0)%Z = true) :
@@ -79,7 +81,7 @@ lia.
 Qed.
 
 
-Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_range int size Signed = true) :
+Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_range int size Signed = true) (Hs: size > 0) :
   int_in_range (int + signed_offset size)%Z size Unsigned = true.
 Proof.
 to_base.
@@ -118,6 +120,7 @@ Lemma lemma6 (d: Int) (size: Size) :
   (int_in_range d size Unsigned = true) ->
   (d - signed_offset size >=? 0)%Z = false.
 Proof.
+intros Hs.
 to_base.
 lia.
 Qed.
@@ -139,6 +142,7 @@ Lemma lemma8 (d: Int) (size: Size) :
   (d >=? 0)%Z = true ->
   (int_in_range d size Signed) = true.
 Proof.
+intros Hs.
 to_base.
 lia.
 Qed.
@@ -180,7 +184,7 @@ split.
 --- unfold encode_int_le. rewrite H,E. simpl. reflexivity.
 --- unfold decode_int_le. simpl.
     rewrite rt1_uint_le.
-    destruct (destruct_int_in_range (lemma3 _ _ E H)) as [H0 H1].
+    destruct (destruct_int_in_range (lemma3 _ _ E H Hs)) as [H0 H1].
 ---- rewrite uint_le_encode_valid.
      rewrite Nat.eqb_refl.
      simpl. f_equal.
@@ -191,8 +195,8 @@ split.
      unfold signed_offset.
      apply lemma4.
      assumption.
-     apply (lemma3 _ _ E H).
----- apply (lemma3 _ _ E H).
+     apply (lemma3 _ _ E H Hs).
+---- apply (lemma3 _ _ E H Hs).
 
 (* unsigned *)
 - exists (encode_uint_le size int).
