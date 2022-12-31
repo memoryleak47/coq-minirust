@@ -146,3 +146,9 @@ apply rt1_uint_le.
 assumption.
 assumption.
 Qed.
+
+Lemma rt2_int_le (size: Size) (signedness: Signedness) (l: list byte) (H: length l = size) :
+exists int, Some int = decode_int_le size signedness l /\
+encode_int_le size signedness int = Some l.
+Proof.
+Admitted.
