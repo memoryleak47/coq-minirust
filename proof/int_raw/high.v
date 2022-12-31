@@ -60,11 +60,10 @@ Lemma rt1_int (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range 
 Proof.
 intros Hs.
 destruct ENDIANNESS eqn:E.
-- destruct (rt1_int_le size signedness int H) as [l]; try assumption.
-  exists l. unfold encode_int_raw,decode_int_raw. rewrite E. assumption.
-- destruct (rt1_int_le size signedness int H) as [l]; try assumption.
+- destruct (rt1_int_le size signedness int H) as [l [H0 [H1 H2]]]; try assumption.
+  exists l. unfold encode_int_raw,decode_int_raw. rewrite E. split; assumption.
+- destruct (rt1_int_le size signedness int H) as [l [H0 [H1 H2]]]; try assumption.
   exists (rev l). unfold encode_int_raw,decode_int_raw. rewrite E.
-  destruct H0 as [H0 H1].
   rewrite <- H0. simpl.
   split; try reflexivity.
   rewrite rev_involutive.
@@ -78,12 +77,11 @@ Lemma rt2_int (size: Size) (signedness: Signedness) (l: list byte) (H: length l 
 Proof.
 intros Hs.
 destruct ENDIANNESS eqn:E.
-- destruct (rt2_int_le size signedness l H) as [i]; try assumption.
-  exists i. unfold encode_int_raw,decode_int_raw. rewrite E. assumption.
+- destruct (rt2_int_le size signedness l H) as [i [H0 [H1 H2]]]; try assumption.
+  exists i. unfold encode_int_raw,decode_int_raw. rewrite E. split; assumption.
 - assert (length (rev l) = size) as H'. { rewrite rev_length. assumption. }
-  destruct (rt2_int_le size signedness (rev l) H') as [i]; try assumption.
+  destruct (rt2_int_le size signedness (rev l) H') as [i [H0 [H1 H2]]]; try assumption.
   exists i. unfold encode_int_raw,decode_int_raw. rewrite E.
-  destruct H0 as [H0 H1].
   rewrite <- H0.
   split. { reflexivity. }
   rewrite H1.
