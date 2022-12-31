@@ -37,11 +37,15 @@ unfold int_stop in Hbase.
 apply (proj2 (Z.ltb_lt int _)).
 apply (Z.lt_trans _ _ _ Hbase). clear - size.
 destruct size. { simpl. lia. } (* this gives me size > 0 *)
-assert ((Z.of_nat (S size) * 8)%Z = Z.of_nat ((S size) * 8)) as A. { lia. }
-rewrite A. clear A.
-assert ((Z.of_nat ((S size) * 8) - 1)%Z = Z.of_nat ((S size) * 8 - 1)) as A. { lia. }
-rewrite A. clear A.
 apply h1; lia.
+Qed.
+
+Lemma lemma3_2 (z: Z) : (-2^(z-1) + 2^z >= 0)%Z.
+Proof.
+assert (2^(z-1) <= 2^z)%Z. {
+  apply (Z.pow_le_mono_r); try lia.
+}
+lia.
 Qed.
 
 Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_range int size Signed = true) :
@@ -49,6 +53,7 @@ Lemma lemma3 (size: Size) (int: Int) (H1: (int >=? 0)%Z = false) (H2: int_in_ran
 Proof.
 unfold int_in_range. destruct (destruct_int_in_range H2).
 unfold int_start,int_stop,signed_offset.
+
 replace ((int + 2 ^ (Z.of_nat size * 8) <?
   2 ^ (Z.of_nat size * 8))%Z)%bool with true; cycle 1.
 assert (int <? 0 = true)%Z. { lia. }
@@ -56,14 +61,13 @@ lia.
 
 replace (int + 2 ^ (Z.of_nat size * 8) >=? 0)%Z with true; cycle 1.
 - unfold int_start in H.
-  assert (int + 2 ^ (Z.of_nat size * 8) >= 0)%Z.
+  assert (int + 2 ^ (Z.of_nat size * 8) >= 0)%Z; try lia.
   assert (forall a b c, a >= b -> b+c >= 0 -> a+c >= 0)%Z as H3. { lia. }
   apply (H3 int (- 2 ^ (Z.of_nat size * 8 - 1) )%Z _).
 -- lia.
--- admit.
--- lia.
+-- apply lemma3_2.
 - simpl. reflexivity.
-Admitted.
+Qed.
 
 Lemma lemma4 (size: Size) (int: Int)
               (Hs0 : (int >= - 2 ^ (Z.of_nat size * 8 - 1))%Z) :
