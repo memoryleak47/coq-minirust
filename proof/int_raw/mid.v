@@ -75,7 +75,14 @@ Lemma lemma4 (size: Size) (int: Int)
         int + 2 ^ (Z.of_nat size * 8)
     >=? 2 ^ (Z.of_nat size * 8 - 1))%Z.
 Proof.
-Admitted.
+rewrite (proj2 (Z.geb_le _ _)). { reflexivity. }
+assert (2 ^ (Z.of_nat size * 8 - 1) <= (- 2 ^ (Z.of_nat size * 8 - 1))%Z + 2 ^ (Z.of_nat size * 8))%Z; cycle 1. { lia. }
+destruct (mk_var (Z.of_nat size * 8))%Z as [x Hx]. rewrite Hx. clear - x.
+destruct x; try (simpl; lia).
+assert (2^(Z.pos p) = 2 * 2^(Z.pos p-1))%Z; try lia.
+rewrite <- (Z.pow_succ_r 2); try lia.
+replace (Z.succ (Z.pos p - 1))%Z with (Z.pos p); lia.
+Qed.
 
 Lemma rt1_int_le (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
 exists l, Some l = encode_int_le size signedness int /\
