@@ -8,17 +8,40 @@ Require Import ZArith.
 Require Import Lia.
 
 Lemma rt1_int (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
-exists l, Some l = encode_int_raw size signedness int /\
-decode_int_raw size signedness l = Some int.
+  (size > 0) ->
+  exists l, Some l = encode_int_raw size signedness int /\
+  decode_int_raw size signedness l = Some int.
 Proof.
+intros Hs.
 destruct ENDIANNESS eqn:E.
-- destruct (rt1_int_le size signedness int H) as [l].
+- destruct (rt1_int_le size signedness int H) as [l]; try assumption.
   exists l. unfold encode_int_raw,decode_int_raw. rewrite E. assumption.
-- destruct (rt1_int_le size signedness int H) as [l].
+- destruct (rt1_int_le size signedness int H) as [l]; try assumption.
   exists (rev l). unfold encode_int_raw,decode_int_raw. rewrite E.
   destruct H0 as [H0 H1].
   rewrite <- H0. simpl.
   split; try reflexivity.
   rewrite rev_involutive.
   assumption.
+Qed.
+
+Lemma rt2_int (size: Size) (signedness: Signedness) (l: list byte) (H: length l = size) :
+  (size > 0) ->
+  exists i, Some i = decode_int_raw size signedness l /\
+  encode_int_raw size signedness i = Some l.
+Proof.
+intros Hs.
+destruct ENDIANNESS eqn:E.
+- destruct (rt2_int_le size signedness l H) as [i]; try assumption.
+  exists i. unfold encode_int_raw,decode_int_raw. rewrite E. assumption.
+- assert (length (rev l) = size) as H'. { rewrite rev_length. assumption. }
+  destruct (rt2_int_le size signedness (rev l) H') as [i]; try assumption.
+  exists i. unfold encode_int_raw,decode_int_raw. rewrite E.
+  destruct H0 as [H0 H1].
+  rewrite <- H0.
+  split. { reflexivity. }
+  rewrite H1.
+  simpl.
+  rewrite rev_involutive.
+  reflexivity.
 Qed.
