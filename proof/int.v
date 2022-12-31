@@ -133,11 +133,16 @@ rewrite H2. simpl. f_equal.
 Qed.
 
 Lemma valid_int {size: Size} {signedness: Signedness} {v: Value} (H: is_valid_for (TInt size signedness) v) :
+  (size > 0) ->
   exists (l: list AbstractByte), IntPair size signedness v l.
 Proof.
+intros Hs.
 unfold is_valid_for in H.
-Fail destruct H. (* why does this fail? *)
-Admitted.
+destruct H.
+destruct (decode_int_pair H). { apply Hs. }
+exists l.
+apply (mkIntPair H0 H1 H2 H3 H4 H5).
+Qed.
 
 Lemma int_mono1 (size: Size) (signedness: Signedness) : mono1 (TInt size signedness).
 Proof.
