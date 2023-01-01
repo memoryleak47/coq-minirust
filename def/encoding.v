@@ -25,6 +25,33 @@ Fixpoint unwrap_abstract (l: list AbstractByte) : option (list byte) :=
   | [] => Some []
   end.
 
+Definition unique_prov (l: list AbstractByte) : option P :=
+  let start_prov :=
+    match l with
+    | [] => None
+    | Uninit::_ => None
+    | (Init _ p)::_ => p
+    end
+  in
+
+  let p_opt_eq := fun x y =>
+    match (x, y) with
+    | (Some a, Some b) => P_EQ a b
+    | (None, None) => true
+    | _ => false
+    end
+  in
+
+  let has_start_prov := fun x =>
+    match x with
+    | Uninit => false
+    | Init _ p => p_opt_eq p start_prov
+    end
+  in
+
+  start_prov
+  >>= assuming_const (forallb has_start_prov l).
+
 (* int *)
 Definition encode_int (size: Size) (signedness: Signedness) (v: Value) : option (list AbstractByte) :=
   match v with
@@ -64,32 +91,7 @@ Definition encode_ptr (_ptr_ty: PtrTy) (_layout: Layout) (v: Value) : option (li
   end.
 
 Definition decode_ptr (ptr_ty: PtrTy) (layout : Layout) (l: list AbstractByte) : option Value :=
-  let start_prov :=
-    match l with
-    | [] => None
-    | Uninit::_ => None
-    | (Init _ p)::_ => p
-    end
-  in
-
-  let p_opt_eq := fun x y =>
-    match (x, y) with
-    | (Some a, Some b) => P_EQ a b
-    | (None, None) => true
-    | _ => false
-    end
-  in
-
-  let has_start_prov := fun x =>
-    match x with
-    | Uninit => false
-    | Init _ p => p_opt_eq p start_prov
-    end
-  in
-
-  let prov := start_prov
-    >>= assuming_const (forallb has_start_prov l)
-  in
+  let prov := unique_prov l in
 
   let align :=
     Z.of_nat (match layout with
