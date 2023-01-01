@@ -28,6 +28,14 @@ Notation Constraints addr align := (
   | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
   end).
 
+Lemma lemma1 (l1 l2: list AbstractByte) l (Hle: le l1 l2) (Hunw: unwrap_abstract l1 = Some l) : unwrap_abstract l2 = Some l.
+Proof.
+Admitted.
+
+Lemma lemma2 l1 l2 p (H: unique_prov l1 = Some p) : unique_prov l2 = Some p.
+Proof.
+Admitted.
+
 Lemma ptr_mono1 : mono1 t.
 Proof.
 intros Hwf v1 v2 Hle Hv1 Hv2.
@@ -114,7 +122,32 @@ destruct (decode_int_raw PTR_SIZE Unsigned l) eqn:Hdec; cycle 1. {
   unfold decode,decode_ptr. rewrite Hunw. simpl. rewrite Hdec. simpl.
   trivial.
 }
-Admitted.
+destruct (Constraints i align) eqn:Hc; cycle 1. {
+  unfold decode,decode_ptr. rewrite Hunw. simpl. rewrite Hdec. simpl.
+  unfold utils.assuming.
+  rewrite Hc. simpl. trivial.
+}
+
+unfold decode,decode_ptr. rewrite Hunw. simpl. rewrite Hdec. simpl.
+unfold utils.assuming. rewrite Hc.
+simpl.
+
+assert (unwrap_abstract l2 = Some l).
+{ apply (lemma1 l1); assumption. }
+
+rewrite H.
+simpl.
+rewrite Hdec.
+simpl.
+rewrite Hc.
+simpl.
+split. { auto. }
+
+destruct (unique_prov l1) eqn:E; cycle 1. { trivial. }
+rewrite (lemma2 l1 l2 p).
+- apply (proj2 (p_eq p p)). auto.
+- assumption.
+Qed.
 
 Lemma ptr_rt1 : rt1 t.
 Proof.
