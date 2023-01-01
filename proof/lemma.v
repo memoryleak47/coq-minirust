@@ -67,6 +67,8 @@ Proof.
 apply (le_list_gen_refl l le_abstract_byte_refl).
 Qed.
 
+(* TODO *)
+(*
 Fixpoint le_val_refl (v : Value) : le v v.
 Proof.
 destruct v.
@@ -81,3 +83,4 @@ destruct v.
 - unfold le. unfold Value_DefinedRelation.
   apply (le_list_gen_refl l (le_list_abstract_byte_refl)).
 Qed.
+*)

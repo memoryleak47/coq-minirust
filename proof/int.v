@@ -213,7 +213,20 @@ destruct (mk_var (wf_int Hwf)) as [Hs _].
 destruct (unwrap_abstract l1) eqn:E.
 - destruct (mk_var (unwrap_abstract_le_some Hle l E)) as [H _].
   unfold decode,decode_int. rewrite E,H.
-  apply (le_list_refl).
+  unfold ssrfun.Option.bind, ssrfun.Option.apply.
+
+  (* TODO this can be removed, should I get a general `Value` le v v lemma. *)
+  destruct (Nat.eq_dec (length l) size).
+-- destruct (rt2_int size signedness l) as [H0 [H1 [H2 H3]]]; try assumption.
+   rewrite <- H1.
+   simpl. reflexivity.
+-- rewrite (decode_int_none n).
+   trivial.
+- destruct (mk_var (unwrap_abstract_le_none Hle E)) as [E' _].
+  unfold decode,decode_int. rewrite E,E'.
+  simpl.
+  trivial.
+Qed.
 
 Lemma int_rt1 (size: Size) (signedness: Signedness) : rt1 (TInt size signedness).
 Proof.
