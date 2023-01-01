@@ -4,8 +4,11 @@ Require Import List.
 Require Import ZArith.
 Import ListNotations.
 
-Context {layout: Layout}.
-Context {ptr_ty: PtrTy}.
+Section ptr.
+
+Context (layout: Layout).
+Context (ptr_ty: PtrTy).
+
 Definition t := TPtr ptr_ty layout.
 
 Inductive Constraints : Int -> Type :=
@@ -19,19 +22,21 @@ Lemma valid_ptr (v: Value) (H: is_valid_for t v) :
   ValidPtr v.
 Admitted.
 
-Lemma ptr_mono1 (ptr_ty: PtrTy) {layout: Layout}: mono1 (TPtr ptr_ty layout).
+Lemma ptr_mono1 : mono1 t.
 Proof.
 Admitted.
 
-Lemma ptr_mono2 (ptr_ty: PtrTy) {layout: Layout} : mono2 (TPtr ptr_ty layout).
+Lemma ptr_mono2 : mono2 t.
 Proof.
 Admitted.
 
-Lemma ptr_rt1 (ptr_ty: PtrTy) {layout: Layout} : rt1 (TPtr ptr_ty layout).
+Lemma ptr_rt1 : rt1 t.
 Proof.
 intros _ v Hval.
 Admitted.
 
-Lemma ptr_rt2 (ptr_ty: PtrTy) {layout: Layout} : rt2 (TPtr ptr_ty layout).
+Lemma ptr_rt2 : rt2 t.
 Proof.
 Admitted.
+
+End ptr.

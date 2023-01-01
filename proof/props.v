@@ -48,4 +48,3 @@ destruct ty.
 - apply cheat.
 - apply cheat.
 Qed.
-
