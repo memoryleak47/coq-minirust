@@ -28,6 +28,8 @@ Definition PTR_SIZE := PTR_SIZE_impl.
 Context `{P_EQ_impl : P -> P -> bool}.
 Definition P_EQ := P_EQ_impl.
 
+Axiom p_eq_refl : forall (p: P), (P_EQ p p) = true.
+
 Definition Int := Z.
 
 Inductive Signedness :=

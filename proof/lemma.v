@@ -41,3 +41,43 @@ induction l1 as [|b1 l1' H].
 --- apply H. destruct p. assumption.
 --- destruct p. apply mk_le_abstract_byte. assumption.
 Qed.
+
+Lemma le_abstract_byte_refl (x : AbstractByte) : le x x.
+Proof.
+destruct x.
+- simpl. trivial.
+- destruct o.
+-- simpl. auto.
+-- simpl. auto.
+Qed.
+
+Lemma le_list_gen_refl {T: Type} (l : list T) {_: DefinedRelation T} (Q: forall (t: T), le t t) : le l l.
+Proof.
+simpl.
+induction l as [|t l IH].
+- simpl. trivial.
+- simpl.
+  split.
+-- apply Q.
+-- apply IH.
+Qed.
+
+Lemma le_list_abstract_byte_refl (l : list AbstractByte) : le l l.
+Proof.
+apply (le_list_gen_refl l le_abstract_byte_refl).
+Qed.
+
+Fixpoint le_val_refl (v : Value) : le v v.
+Proof.
+destruct v.
+- simpl. reflexivity.
+- simpl. reflexivity.
+- destruct o;
+  simpl;
+  split;
+  auto.
+  apply p_eq_refl.
+- apply (le_list_gen_refl l (fun v => le_val_refl v)).
+- unfold le. unfold Value_DefinedRelation.
+  apply (le_list_gen_refl l (le_list_abstract_byte_refl)).
+Qed.

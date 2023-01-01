@@ -167,6 +167,16 @@ simpl.
 rewrite H2. simpl. f_equal.
 Qed.
 
+Lemma unwrap_abstract_le_some {l1 l2: list AbstractByte} (H: le l1 l2) :
+  forall bl, (unwrap_abstract l1 = Some bl) -> unwrap_abstract l2 = Some bl.
+Proof.
+Admitted.
+
+Lemma unwrap_abstract_le_none {l1 l2: list AbstractByte} (H: le l1 l2) :
+  (unwrap_abstract l1 = None) -> unwrap_abstract l2 = None.
+Proof.
+Admitted.
+
 Lemma valid_int {size: Size} {signedness: Signedness} {v: Value} (H: is_valid_for (TInt size signedness) v) :
   (size > 0) ->
   exists (l: list AbstractByte), IntPair size signedness v l.
@@ -198,7 +208,12 @@ Qed.
 
 Lemma int_mono2 (size: Size) (signedness: Signedness) : mono2 (TInt size signedness).
 Proof.
-Admitted.
+intros Hwf l1 l2 Hle.
+destruct (mk_var (wf_int Hwf)) as [Hs _].
+destruct (unwrap_abstract l1) eqn:E.
+- destruct (mk_var (unwrap_abstract_le_some Hle l E)) as [H _].
+  unfold decode,decode_int. rewrite E,H.
+  apply (le_list_refl).
 
 Lemma int_rt1 (size: Size) (signedness: Signedness) : rt1 (TInt size signedness).
 Proof.
