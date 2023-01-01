@@ -36,22 +36,21 @@ Inductive Signedness :=
  | Signed : Signedness
  | Unsigned : Signedness.
 
-Inductive Mutability :=
- | Mutable : Mutability
- | Immutable : Mutability.
-
 (* offset, length pairs *)
 Definition Chunks := list (Size * Size).
 
+Inductive Layout :=
+  | mkLayout : Align -> Size -> Layout.
+
 Inductive PtrTy : Type :=
- | Ref : Align -> Size -> Mutability -> PtrTy
- | Box : Align -> Size -> PtrTy
- | Raw : Align -> Size -> PtrTy.
+  | Ref
+  | Box
+  | Raw.
 
 Inductive Ty : Type :=
  | TBool : Ty
  | TInt : Size -> Signedness -> Ty
- | TPtr : PtrTy -> Ty
+ | TPtr : PtrTy -> Layout -> Ty
  | TTuple : list (Size * Ty) -> Size -> Ty
  | TArray : Ty -> Int -> Ty
  | TUnion : list (Size * Ty) -> Chunks -> Size -> Ty.
@@ -76,7 +75,7 @@ Fixpoint ty_size (t: Ty) : Size :=
   match t with
   | TBool => 1
   | TInt s _ => s
-  | TPtr _ => PTR_SIZE
+  | TPtr _ _ => PTR_SIZE
   | TTuple _ s => s
   | TArray elem count =>
     let count := Z.to_nat count in (* TODO should I consider negative count here? *)

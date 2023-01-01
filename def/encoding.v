@@ -55,7 +55,7 @@ Definition decode_bool (l: list AbstractByte) : option Value :=
  end.
 
 (* ptr *)
-Definition encode_ptr (_ptr_ty: PtrTy) (v: Value) : option (list AbstractByte) :=
+Definition encode_ptr (_ptr_ty: PtrTy) (_layout: Layout) (v: Value) : option (list AbstractByte) :=
   match v with
   | VPtr addr opt_p =>
     encode_int_raw PTR_SIZE Unsigned addr
@@ -63,7 +63,7 @@ Definition encode_ptr (_ptr_ty: PtrTy) (v: Value) : option (list AbstractByte) :
   | _ => None
   end.
 
-Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
+Definition decode_ptr (ptr_ty: PtrTy) (layout : Layout) (l: list AbstractByte) : option Value :=
   let start_prov :=
     match l with
     | [] => None
@@ -92,14 +92,10 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
   in
 
   let align :=
-    match ptr_ty with
-    | Ref align _ _ => align
-    | Box align _ => align
-    | Raw align _ => align
+    match layout with
+    | mkLayout align _size => Z.of_nat align
     end
   in
-
-  let align := Z.of_nat align in
 
   unwrap_abstract l
   >>= (fun bytes => decode_int_raw PTR_SIZE Unsigned bytes)
@@ -107,7 +103,7 @@ Definition decode_ptr (ptr_ty: PtrTy) (l: list AbstractByte) : option Value :=
     let constraints : bool := (addr >? 0)%Z && (addr mod align =? 0)%Z in
     let is_raw : bool :=
       match ptr_ty with
-      | Raw _ _ => true
+      | Raw => true
       | _ => false
       end
     in
@@ -226,7 +222,7 @@ Fixpoint encode (ty : Ty) (val: Value) : option (list AbstractByte) :=
  match ty with
   | TInt size signedness => encode_int size signedness val
   | TBool => encode_bool val
-  | TPtr ptr_ty => encode_ptr ptr_ty val
+  | TPtr ptr_ty layout => encode_ptr ptr_ty layout val
   | TTuple fields size => encode_tuple fields size val encode
   | TArray elem count => encode_array elem count val encode
   | TUnion fields chunks size => encode_union fields chunks size val
@@ -236,7 +232,7 @@ Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
  match ty with
   | TInt size signedness => decode_int size signedness l
   | TBool => decode_bool l
-  | TPtr ptr_ty => decode_ptr ptr_ty l
+  | TPtr ptr_ty layout => decode_ptr ptr_ty layout l
   | TTuple fields size => decode_tuple fields size l decode
   | TArray elem count => decode_array elem count l decode
   | TUnion fields chunks size => decode_union fields chunks size l
