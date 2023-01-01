@@ -27,7 +27,7 @@ Qed.
 
 Inductive LeList : list AbstractByte -> list AbstractByte -> Type :=
   | LEmpty : LeList [] []
-  | LLe b1 b2 l1' l2' : LeList l1' l2' -> LeAbstractByte b1 b2 -> LeList (b1::l1') (b2::l2').
+  | LLe b1 b2 l1' l2' : LeList l1' l2' -> LeAbstractByte b1 b2 -> le (b1::l1') (b2::l2') -> LeList (b1::l1') (b2::l2').
 
 Lemma mk_le_list (l1 : list AbstractByte) : forall l2, le l1 l2 -> LeList l1 l2.
 Proof.
@@ -35,11 +35,13 @@ induction l1 as [|b1 l1' H].
 - intros l2 p. destruct l2 as [|b2 l2'].
 -- apply LEmpty; reflexivity.
 -- destruct p.
-- intros l2 p. destruct l2 as [|b2 l2'].
+- intros l2 p.
+  destruct l2 as [|b2 l2'].
 --  destruct p.
 -- apply LLe.
 --- apply H. destruct p. assumption.
 --- destruct p. apply mk_le_abstract_byte. assumption.
+--- assumption.
 Qed.
 
 Lemma le_abstract_byte_refl (x : AbstractByte) : le x x.

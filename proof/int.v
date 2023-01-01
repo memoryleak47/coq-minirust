@@ -170,12 +170,33 @@ Qed.
 Lemma unwrap_abstract_le_some {l1 l2: list AbstractByte} (H: le l1 l2) :
   forall bl, (unwrap_abstract l1 = Some bl) -> unwrap_abstract l2 = Some bl.
 Proof.
-Admitted.
-
-Lemma unwrap_abstract_le_none {l1 l2: list AbstractByte} (H: le l1 l2) :
-  (unwrap_abstract l1 = None) -> unwrap_abstract l2 = None.
-Proof.
-Admitted.
+intros bytes Hunw1.
+generalize dependent bytes.
+induction (mk_le_list _ _ H) as [|b1 b2 l1 l2 HLeL IH HLeB Hle].
+- intros bytes. intros. assumption.
+- intros bytes Hbytes.
+  destruct b1.
+-- simpl in Hbytes. discriminate Hbytes.
+-- simpl in Hbytes.
+   destruct (unwrap_abstract l1) eqn:E; cycle 1. { simpl in Hbytes. discriminate Hbytes. }
+   simpl in Hbytes. inversion Hbytes.
+   assert (le l1 l2). { simpl in H. destruct H. auto. }
+   inversion Hbytes.
+   assert (unwrap_abstract l2 = Some l). {
+     apply IH. assumption. auto.
+   }
+   destruct b2 eqn:F.
+--- simpl in Hle.
+    exfalso.
+    destruct o; apply (proj1 Hle).
+--- simpl. rewrite H2. simpl. f_equal. f_equal.
+    simpl in Hle.
+    destruct o,o0; inversion Hle.
+---- inversion H4. rewrite H6. auto.
+---- inversion H4.
+---- rewrite H4. auto.
+---- rewrite H4. auto.
+Qed.
 
 Lemma valid_int {size: Size} {signedness: Signedness} {v: Value} (H: is_valid_for (TInt size signedness) v) :
   (size > 0) ->
@@ -222,8 +243,7 @@ destruct (unwrap_abstract l1) eqn:E.
    simpl. reflexivity.
 -- rewrite (decode_int_none n).
    trivial.
-- destruct (mk_var (unwrap_abstract_le_none Hle E)) as [E' _].
-  unfold decode,decode_int. rewrite E,E'.
+- unfold decode,decode_int. rewrite E.
   simpl.
   trivial.
 Qed.
