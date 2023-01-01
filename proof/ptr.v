@@ -28,16 +28,6 @@ Notation Constraints addr align := (
   | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
   end).
 
-Inductive ValidPtr : Value -> Type :=
-  | mkValidPtr addr p : Constraints addr align = true -> ValidPtr (VPtr addr p).
-
-Lemma valid_ptr (v: Value) (H: is_valid_for t v) :
-  ValidPtr v.
-Proof.
-
-unfold is_valid_for in H.
-Admitted.
-
 Lemma ptr_mono1 : mono1 t.
 Proof.
 intros Hwf v1 v2 Hle Hv1 Hv2.
@@ -71,7 +61,48 @@ assert (exists b, VPtr addr b = v2). {
 destruct H as [p' Hrew].
 rewrite <- Hrew. rewrite <- Hrew in Hle,Hv2. clear Hrew v2.
 unfold encode,encode_ptr.
-Admitted.
+assert (exists l, encode_int_raw PTR_SIZE Unsigned addr = Some l). {
+  destruct (encode_int_raw PTR_SIZE Unsigned addr) eqn:E. { exists l. reflexivity. }
+  exfalso.
+  destruct Hv1 as [l Hdec].
+  unfold decode,decode_ptr in Hdec.
+  destruct (unwrap_abstract l) eqn:F; cycle 1.
+  { simpl in Hdec. discriminate Hdec. }
+  simpl in Hdec.
+  destruct (decode_int_raw PTR_SIZE Unsigned l0) eqn:G; cycle 1.
+  { simpl in Hdec. discriminate Hdec. }
+  simpl in Hdec. unfold utils.assuming in Hdec.
+  destruct (Constraints i align) eqn:H; cycle 1.
+  { simpl in Hdec. discriminate Hdec. }
+  simpl in Hdec.
+  inversion Hdec.
+  destruct (Nat.eq_dec (length l0) PTR_SIZE); cycle 1.
+  -- assert (decode_int_raw PTR_SIZE Unsigned l0 = None).
+     { apply (decode_int_none n). }
+     rewrite G in H0. discriminate H0.
+  -- destruct (rt2_int PTR_SIZE Unsigned _ e).
+     { apply ptr_size_gt0. }
+     inversion H0. inversion H4.
+     rewrite G in H3. inversion H3.
+     rewrite H1 in H8.
+     rewrite H8 in H5.
+     rewrite H5 in E. discriminate E.
+}
+destruct H as [l H].
+rewrite H. unfold option_map.
+exists (wrap_abstract l p), (wrap_abstract l p').
+split; try auto.
+split; try auto.
+clear H.
+induction l as [|b l IH].
+- trivial.
+- simpl.
+  split.
+-- destruct p,p'; repeat (split || reflexivity || simpl in Hle).
+--- inversion Hle. apply (proj1 (p_eq p p0)). assumption.
+--- inversion Hle. assumption.
+-- apply IH.
+Qed.
 
 Lemma ptr_mono2 : mono2 t.
 Proof.

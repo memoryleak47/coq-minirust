@@ -25,10 +25,12 @@ Definition P := P_impl.
 Context `{PTR_SIZE_impl : Size}.
 Definition PTR_SIZE := PTR_SIZE_impl.
 
+Axiom ptr_size_gt0 : PTR_SIZE > 0.
+
 Context `{P_EQ_impl : P -> P -> bool}.
 Definition P_EQ := P_EQ_impl.
 
-Axiom p_eq_refl : forall (p: P), (P_EQ p p) = true.
+Axiom p_eq : forall (p q: P), (P_EQ p q) = true <-> p = q.
 
 Definition Int := Z.
 

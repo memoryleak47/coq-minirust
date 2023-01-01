@@ -87,7 +87,8 @@ destruct v eqn:E.
   simpl;
   split;
   auto.
-  apply p_eq_refl.
+  apply (proj2 (p_eq p p)).
+  reflexivity.
 
 - generalize dependent v.
   induction l as [|t l IH].
