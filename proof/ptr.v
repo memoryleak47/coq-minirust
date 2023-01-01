@@ -52,38 +52,9 @@ assert (exists a b, VPtr a b = v1). {
   simpl in H.
   injection H.
   intros L.
-  (* TODO better solution? *)
-  exists i. exists ((ssrfun.Option.bind
-          (utils.assuming_const
-             (forallb
-                (fun x0 : AbstractByte =>
-                 match x0 with
-                 | Uninit => false
-                 | Init _ (Some a) =>
-                     match
-                       match x with
-                       | Init _ p0 :: _ => p0
-                       | _ => None
-                       end
-                     with
-                     | Some b0 => P_EQ a b0
-                     | None => false
-                     end
-                 | Init _ None =>
-                     match
-                       match x with
-                       | Init _ p0 :: _ => p0
-                       | _ => None
-                       end
-                     with
-                     | Some _ => false
-                     | None => true
-                     end
-                 end) x))
-          match x with
-          | Init _ p :: _ => p
-          | _ => None
-          end)). auto.
+  exists i.
+  eexists _.
+  apply L.
 }
 destruct H as [addr].
 destruct H as [p Hv].
