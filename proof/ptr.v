@@ -89,7 +89,7 @@ assert (exists l, encode_int_raw PTR_SIZE Unsigned addr = Some l). {
      rewrite H5 in E. discriminate E.
 }
 destruct H as [l H].
-rewrite H. unfold option_map.
+rewrite H.
 exists (wrap_abstract l p), (wrap_abstract l p').
 split; try auto.
 split; try auto.
@@ -106,6 +106,14 @@ Qed.
 
 Lemma ptr_mono2 : mono2 t.
 Proof.
+intros Hwf l1 l2 Hle.
+destruct (unwrap_abstract l1) eqn:Hunw; cycle 1. {
+  unfold decode,decode_ptr. rewrite Hunw. simpl. trivial.
+}
+destruct (decode_int_raw PTR_SIZE Unsigned l) eqn:Hdec; cycle 1. {
+  unfold decode,decode_ptr. rewrite Hunw. simpl. rewrite Hdec. simpl.
+  trivial.
+}
 Admitted.
 
 Lemma ptr_rt1 : rt1 t.

@@ -234,7 +234,6 @@ destruct (mk_var (wf_int Hwf)) as [Hs _].
 destruct (unwrap_abstract l1) eqn:E.
 - destruct (mk_var (unwrap_abstract_le_some Hle l E)) as [H _].
   unfold decode,decode_int. rewrite E,H.
-  unfold ssrfun.Option.bind, ssrfun.Option.apply.
   apply le_option_val_refl.
 - unfold decode,decode_int. rewrite E.
   simpl.

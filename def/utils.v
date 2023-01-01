@@ -4,10 +4,21 @@ Require Import Coq.Init.Byte.
 Require Import ZArith.
 Require Import List.
 Import ListNotations.
-Require Import ssrfun.
 
-Notation "x >>= f" := (Option.bind f x) (at level 70).
-Notation "x o-> f" := (option_map f x) (at level 70).
+Definition opt_bind {aT rT : Type} (f: aT -> option rT) (o: option aT):  option rT :=
+  match o with
+  | Some a => f a
+  | None => None
+  end.
+
+Definition opt_map {aT rT : Type} (f: aT -> rT) (o: option aT):  option rT :=
+  match o with
+  | Some a => Some (f a)
+  | None => None
+  end.
+
+Notation "x >>= f" := (opt_bind f x) (at level 70).
+Notation "x o-> f" := (opt_map f x) (at level 70).
 
 Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
   match l with
