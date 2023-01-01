@@ -235,14 +235,7 @@ destruct (unwrap_abstract l1) eqn:E.
 - destruct (mk_var (unwrap_abstract_le_some Hle l E)) as [H _].
   unfold decode,decode_int. rewrite E,H.
   unfold ssrfun.Option.bind, ssrfun.Option.apply.
-
-  (* TODO this can be removed, should I get a general `Value` le v v lemma. *)
-  destruct (Nat.eq_dec (length l) size).
--- destruct (rt2_int size signedness l) as [H0 [H1 [H2 H3]]]; try assumption.
-   rewrite <- H1.
-   simpl. reflexivity.
--- rewrite (decode_int_none n).
-   trivial.
+  apply le_option_val_refl.
 - unfold decode,decode_int. rewrite E.
   simpl.
   trivial.

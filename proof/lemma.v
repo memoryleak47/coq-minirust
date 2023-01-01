@@ -44,14 +44,7 @@ induction l1 as [|b1 l1' H].
 --- assumption.
 Qed.
 
-Lemma le_abstract_byte_refl (x : AbstractByte) : le x x.
-Proof.
-destruct x.
-- simpl. trivial.
-- destruct o.
--- simpl. auto.
--- simpl. auto.
-Qed.
+(* le refl *)
 
 Lemma le_list_gen_refl {T: Type} (l : list T) {_: DefinedRelation T} (Q: forall (t: T), le t t) : le l l.
 Proof.
@@ -62,6 +55,22 @@ induction l as [|t l IH].
   split.
 -- apply Q.
 -- apply IH.
+Qed.
+
+Lemma le_option_gen_refl {T: Type} (o: option T) {_: DefinedRelation T} (Q: forall (t: T), le t t) : le o o.
+Proof.
+destruct o.
+- apply Q.
+- simpl. trivial.
+Qed.
+
+Lemma le_abstract_byte_refl (x : AbstractByte) : le x x.
+Proof.
+destruct x.
+- simpl. trivial.
+- destruct o.
+-- simpl. auto.
+-- simpl. auto.
 Qed.
 
 Lemma le_list_abstract_byte_refl (l : list AbstractByte) : le l l.
@@ -89,4 +98,10 @@ destruct v eqn:E.
 
 - unfold le. unfold Value_DefinedRelation.
   apply (le_list_gen_refl l (le_list_abstract_byte_refl)).
+Qed.
+
+Lemma le_option_val_refl (o: option Value) : le o o.
+Proof.
+apply le_option_gen_refl.
+apply le_val_refl.
 Qed.
