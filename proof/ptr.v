@@ -4,15 +4,19 @@ Require Import List.
 Require Import ZArith.
 Import ListNotations.
 
-Inductive Constraints : PtrTy -> Layout -> Int -> Type :=
-  | CRaw {align} {size: Size} {size} {addr} : Constraints Raw (mkLayout align size) addr.
+Context {layout: Layout}.
+Context {ptr_ty: PtrTy}.
+Definition t := TPtr ptr_ty layout.
+
+Inductive Constraints : Int -> Type :=
+  | CRaw {addr} : Constraints addr.
  (* TODO add other Constraints option *)
 
-Inductive ValidPtr : PtrTy -> Layout -> Value -> Type :=
-  | mkValidPtr ptr_ty layout addr p : Constraints ptr_ty layout addr -> ValidPtr ptr_ty layout (VPtr addr p).
+Inductive ValidPtr : Value -> Type :=
+  | mkValidPtr addr p : Constraints addr -> ValidPtr (VPtr addr p).
 
-Lemma valid_ptr (ptr_ty: PtrTy) {layout: Layout} (v: Value) (H: is_valid_for (TPtr ptr_ty layout) v) :
-  ValidPtr ptr_ty layout v.
+Lemma valid_ptr (v: Value) (H: is_valid_for t v) :
+  ValidPtr v.
 Admitted.
 
 Lemma ptr_mono1 (ptr_ty: PtrTy) {layout: Layout}: mono1 (TPtr ptr_ty layout).
@@ -28,6 +32,6 @@ Proof.
 intros _ v Hval.
 Admitted.
 
-Lemma int_rt2 (ptr_ty: PtrTy) {layout: Layout} : rt2 (TPtr ptr_ty layout).
+Lemma ptr_rt2 (ptr_ty: PtrTy) {layout: Layout} : rt2 (TPtr ptr_ty layout).
 Proof.
 Admitted.
