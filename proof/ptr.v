@@ -7,19 +7,34 @@ Import ListNotations.
 Section ptr.
 
 Context (layout: Layout).
+
+Definition align :=
+  match layout with
+  | mkLayout align size => align
+  end.
+
+Definition size :=
+  match layout with
+  | mkLayout align size => size
+  end.
+
 Context (ptr_ty: PtrTy).
 
-Definition t := TPtr ptr_ty layout.
+Notation t := (TPtr ptr_ty layout).
 
-Inductive Constraints : Int -> Type :=
-  | CRaw {addr} : Constraints addr.
- (* TODO add other Constraints option *)
+Definition Constraints addr align :=
+  match ptr_ty with
+  | Raw => true
+  | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
+  end = true.
 
 Inductive ValidPtr : Value -> Type :=
-  | mkValidPtr addr p : Constraints addr -> ValidPtr (VPtr addr p).
+  | mkValidPtr addr p : Constraints addr align -> ValidPtr (VPtr addr p).
 
 Lemma valid_ptr (v: Value) (H: is_valid_for t v) :
   ValidPtr v.
+Proof.
+unfold is_valid_for in H.
 Admitted.
 
 Lemma ptr_mono1 : mono1 t.

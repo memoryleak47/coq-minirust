@@ -100,15 +100,10 @@ Definition decode_ptr (ptr_ty: PtrTy) (layout : Layout) (l: list AbstractByte) :
   unwrap_abstract l
   >>= (fun bytes => decode_int_raw PTR_SIZE Unsigned bytes)
   >>= assuming (fun addr =>
-    let constraints : bool := (addr >? 0)%Z && (addr mod align =? 0)%Z in
-    let is_raw : bool :=
-      match ptr_ty with
-      | Raw => true
-      | _ => false
-      end
-    in
-
-    is_raw || constraints
+    match ptr_ty with
+    | Raw => true
+    | Ref => (addr >? 0)%Z && (addr mod align =? 0)%Z
+    end
   )
   o-> (fun addr => VPtr addr prov).
 

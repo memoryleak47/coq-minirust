@@ -43,8 +43,7 @@ Inductive Layout :=
   | mkLayout : Align -> Size -> Layout.
 
 Inductive PtrTy : Type :=
-  | Ref
-  | Box
+  | Ref (* Box is equivalent to Ref as of now. *)
   | Raw.
 
 Inductive Ty : Type :=
