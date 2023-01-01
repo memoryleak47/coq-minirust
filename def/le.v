@@ -46,15 +46,15 @@ Global Instance option_DefinedRelation (T: Type) (_: DefinedRelation T) : Define
 Global Instance Pointer_DefinedRelation : DefinedRelation (Int * option P) := {
   le x y :=
     let addr := fst x in
-    let addr' := fst y in
+    let addr2 := fst y in
     let prov := snd x in
-    let prov' := snd y in
+    let prov2 := snd y in
 
-    let a := addr = addr' in
+    let a := addr = addr2 in
     let b :=
-      match (prov, prov') with
+      match (prov, prov2) with
       | (None, _) => True
-      | (Some p, Some p') => (P_EQ p p') = true
+      | (Some p, Some p2) => (P_EQ p p2) = true
       | _ => False
       end
     in
@@ -68,9 +68,9 @@ Global Instance Value_DefinedRelation : DefinedRelation Value := {
       match (x, y) with
       | (VInt x, VInt y) => x = y
       | (VBool x, VBool y) => x = y
-      | (VPtr addr prov, VPtr addr' prov') => le (addr, prov') (addr, prov')
+      | (VPtr addr prov, VPtr addr' prov') => le (addr, prov) (addr', prov')
       | (VTuple vals, VTuple vals') => le_list Value vals vals' f
-      | (VUnion chunks1, VUnion chunks2) => le chunks1 chunks2
+      | (VUnion chunks, VUnion chunks') => le chunks chunks'
       | _ => False
       end
     in

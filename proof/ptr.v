@@ -59,7 +59,18 @@ assert (exists a b, VPtr a b = v1). {
 destruct H as [addr].
 destruct H as [p Hv].
 rewrite <- Hv.
-rewrite <- Hv in Hle.
+rewrite <- Hv in Hle,Hv1. clear v1 Hv.
+assert (exists b, VPtr addr b = v2). {
+  destruct v2 eqn:E; try contradiction Hle.
+  simpl in Hle.
+  destruct Hle.
+  rewrite H.
+  exists o.
+  reflexivity.
+}
+destruct H as [p' Hrew].
+rewrite <- Hrew. rewrite <- Hrew in Hle,Hv2. clear Hrew v2.
+unfold encode,encode_ptr.
 Admitted.
 
 Lemma ptr_mono2 : mono2 t.
