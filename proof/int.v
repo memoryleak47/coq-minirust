@@ -12,7 +12,29 @@ Lemma lemma1 bl l :
   unwrap_abstract l = Some bl ->
   le (wrap_abstract bl None) l.
 Proof.
-Admitted.
+generalize dependent bl.
+induction l as [|a l IH].
+- intros bl A. inversion A.
+  simpl.
+  trivial.
+- intros bl A. destruct a.
+-- discriminate A.
+-- simpl in A.
+   destruct (unwrap_abstract l); cycle 1.
+--- discriminate A.
+--- simpl in A. inversion A.
+    destruct bl as [|b' bl'].
+---- discriminate H0.
+---- inversion H0.
+     rewrite <- H1. rewrite <- H1 in H0, A. clear b' H1.
+     rewrite H2 in H0, IH, A. clear H2 l0 H0 A.
+
+     assert (le (wrap_abstract bl' None) l) as IH'. { apply IH. reflexivity. }
+     clear IH.
+     simpl.
+     split. { reflexivity. }
+     apply IH'.
+Qed.
 
 Inductive IntPair : Size -> Signedness -> Value -> list AbstractByte -> Prop :=
  | mkIntPair {size: Size} {signedness: Signedness} {i: Int} {l: list AbstractByte} {bl: list byte} :
