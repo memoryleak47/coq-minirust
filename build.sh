@@ -4,10 +4,9 @@
 
 if [ "$1" == "clean" ]; then
     echo "clearing ..."
-    for x in . def proof
-    do
-        rm -f $x/.*.aux $x/*.vos $x/*.vok $x/*.glob $x/*.vo $x/.makefile.d $x/makefile.conf $x/makefile $x/.Makefile.d $x/Makefile $x/Makefile.conf
-    done
+    rm -f $(find . -regex '.*\.\(vos\|vok\|vo\|glob\|aux\)$')
+    rm -f Makefile Makefile.conf
+
     echo "building new Makefile ..."
     coq_makefile -f _CoqProject -o Makefile
 elif [ -z "$1" ]; then
