@@ -92,9 +92,9 @@ Definition decode_ptr (ptr_ty: PtrTy) (layout : Layout) (l: list AbstractByte) :
   in
 
   let align :=
-    match layout with
-    | mkLayout align _size => Z.of_nat align
-    end
+    Z.of_nat (match layout with
+    | mkLayout align _size => align
+    end)
   in
 
   unwrap_abstract l
