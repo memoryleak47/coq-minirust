@@ -36,6 +36,13 @@ induction l as [|a l IH].
      apply IH'.
 Qed.
 
+Lemma lemma2 {i1: Int} {v2: Value} (H: le (VInt i1) v2) : v2 = (VInt i1).
+Proof.
+destruct v2; try (simpl in H; exfalso; apply H).
+simpl in H. inversion H.
+reflexivity.
+Qed.
+
 Inductive IntPair : Size -> Signedness -> Value -> list AbstractByte -> Prop :=
  | mkIntPair {size: Size} {signedness: Signedness} {i: Int} {l: list AbstractByte} {bl: list byte} :
   unwrap_abstract l = Some bl -> length l = size -> length bl = size -> int_in_range i size signedness = true ->
@@ -174,7 +181,20 @@ Qed.
 
 Lemma int_mono1 (size: Size) (signedness: Signedness) : mono1 (TInt size signedness).
 Proof.
-Admitted.
+intros Hwf v1 v2 Hle Hval1 Hval2.
+set (Hs := wf_int Hwf).
+
+destruct (valid_int Hval1) as [l1 P1]. apply Hs.
+destruct P1.
+destruct (mk_var (lemma2 Hle)) as [Hv12 _].
+rewrite Hv12.
+clear Hle v2 Hv12 Hval2.
+exists (wrap_abstract bl None),(wrap_abstract bl None).
+split; try apply H4.
+split. assumption.
+apply lemma1.
+apply unwrap_wrap.
+Qed.
 
 Lemma int_mono2 (size: Size) (signedness: Signedness) : mono2 (TInt size signedness).
 Proof.
