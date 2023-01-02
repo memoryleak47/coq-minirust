@@ -67,8 +67,22 @@ rewrite <- H.
 assumption.
 Qed.
 
-Lemma lemma2 l1 l2 p (H: unique_prov l1 = Some p) : unique_prov l2 = Some p.
+Lemma lemma2 {l1 l2: list AbstractByte} (Hle: le l1 l2) p (H: unique_prov l1 = Some p) : unique_prov l2 = Some p.
 Proof.
+induction (mk_le_list _ _ Hle) as [| ab1 ab2 l1 l2 HLe IH HLeAB _].
+{ assumption. }
+
+assert (le l1 l2) as Hle'.
+{ simpl in Hle. inversion Hle. assumption. }
+
+assert (unique_prov l1 = Some p). {
+  admit.
+}
+
+assert (unique_prov l2 = Some p).
+{ apply IH. assumption. simpl in H.
+
+assumption.
 Admitted.
 
 Lemma ptr_mono1 : mono1 t.
@@ -179,7 +193,7 @@ simpl.
 split. { auto. }
 
 destruct (unique_prov l1) eqn:E; cycle 1. { trivial. }
-rewrite (lemma2 l1 l2 p).
+rewrite (lemma2 Hle p).
 - apply (proj2 (p_eq p p)). auto.
 - assumption.
 Qed.
@@ -187,7 +201,7 @@ Qed.
 Lemma ptr_rt1 : rt1 t.
 Proof.
 intros _ v Hval.
-.
+Admitted.
 
 Lemma ptr_rt2 : rt2 t.
 Proof.
