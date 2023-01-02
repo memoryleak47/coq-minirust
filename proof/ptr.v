@@ -28,9 +28,44 @@ Notation Constraints addr align := (
   | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
   end).
 
-Lemma lemma1 (l1 l2: list AbstractByte) l (Hle: le l1 l2) (Hunw: unwrap_abstract l1 = Some l) : unwrap_abstract l2 = Some l.
+Lemma lemma1 (l1 l2: list AbstractByte) lb (Hle: le l1 l2) (Hunw: unwrap_abstract l1 = Some lb) : unwrap_abstract l2 = Some lb.
 Proof.
-Admitted.
+generalize dependent lb.
+induction (mk_le_list _ _ Hle) as [|ab1 ab2 l1 l2 HLe IH HLeA Hlec].
+{ intros. assumption. }
+
+intros lb Hunw.
+
+destruct ab1 as [|b1 o1].
+{ simpl in Hunw. discriminate Hunw. }
+
+destruct ab2 as [|b2 o2].
+{ simpl in Hlec. destruct o1; contradiction (proj1 Hlec). }
+
+destruct (unwrap_abstract l1) as [lb1|] eqn:Hunw1; cycle 1.
+{ simpl in Hunw. rewrite Hunw1 in Hunw. simpl in Hunw. discriminate Hunw. }
+
+assert (le l1 l2) as Hle'.
+{ simpl in Hle. inversion Hle. assumption. }
+
+assert (unwrap_abstract l2 = Some lb1) as Hunw2.
+{ apply (IH Hle' lb1). auto. }
+
+assert (b1 = b2). {
+  inversion HLeA.
+  - rewrite <- H. auto.
+  - reflexivity.
+}
+
+simpl. rewrite Hunw2.
+simpl. f_equal.
+
+simpl in Hunw. rewrite Hunw1 in Hunw. simpl in Hunw.
+injection Hunw.
+intros A.
+rewrite <- H.
+assumption.
+Qed.
 
 Lemma lemma2 l1 l2 p (H: unique_prov l1 = Some p) : unique_prov l2 = Some p.
 Proof.
@@ -152,7 +187,7 @@ Qed.
 Lemma ptr_rt1 : rt1 t.
 Proof.
 intros _ v Hval.
-Admitted.
+.
 
 Lemma ptr_rt2 : rt2 t.
 Proof.
