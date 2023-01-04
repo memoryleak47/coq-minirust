@@ -31,6 +31,7 @@ Context `{P_EQ_impl : P -> P -> bool}.
 Definition P_EQ := P_EQ_impl.
 
 Axiom p_eq : forall (p q: P), (P_EQ p q) = true <-> p = q.
+Axiom p_eq_false : forall (p q : P), (P_EQ p q) = false <-> p <> q.
 
 Definition Int := Z.
 
