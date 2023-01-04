@@ -408,9 +408,86 @@ apply (ILCons b _ _ _ ).
 - assumption.
 Qed.
 
-Lemma wrap_unique_le {bl} {l} (H: unwrap_abstract l = Some bl) : le (wrap_abstract bl (unique_prov l)) l.
+Lemma le_list_step {x1 x2 : AbstractByte} {l1 l2} : le (x1 :: l1) (x2 :: l2) = (le x1 x2 /\ le l1 l2).
 Proof.
-Admitted.
+auto.
+Qed.
+
+Lemma wrap_unique_le {bl l} (H: unwrap_abstract l = Some bl) : le (wrap_abstract bl (unique_prov l)) l.
+Proof.
+destruct (unique_prov l) eqn:Huniq; cycle 1.
+{ apply int.lemma1; assumption. }
+
+assert (wrap_abstract bl (Some p) = l); cycle 1.
+{ rewrite H0. apply (le_list_abstract_byte_refl l). }
+
+generalize dependent bl.
+induction l as [|ab l IH].
+{ unfold unique_prov in Huniq. simpl in Huniq. discriminate Huniq. }
+
+intros bl H.
+destruct bl. {
+  destruct ab.
+  - simpl in H. discriminate H.
+  - simpl in H. destruct (unwrap_abstract l); simpl in H; discriminate H.
+}
+
+simpl.
+assert (Init b (Some p) = ab) as Hab. {
+  destruct ab.
+  { simpl in H. discriminate H. }
+
+  assert (b = b0). {
+    simpl in H.
+    destruct (unwrap_abstract l).
+    - simpl in H. inversion H. auto.
+    - simpl in H. discriminate H.
+  }
+
+  rewrite H0.
+  f_equal.
+
+  unfold unique_prov in Huniq.
+  destruct o; cycle 1.
+  { simpl in Huniq. discriminate Huniq. }
+
+  simpl in Huniq.
+  destruct ((P_EQ p0 p0 &&
+           forallb
+             (fun x : AbstractByte =>
+              match x with
+              | Init _ (Some a) =>
+                  P_EQ a p0
+              | _ => false
+              end) l))%bool eqn:E.
+  - simpl in Huniq. inversion Huniq. auto.
+  - simpl in Huniq. discriminate Huniq.
+}
+
+rewrite Hab.
+f_equal.
+
+destruct l eqn:E. {
+  destruct ab.
+  { simpl in Hab. discriminate Hab. }
+
+  simpl in H. inversion H.
+  simpl. auto.
+}
+
+apply IH.
+- apply (lemma2 Huniq).
+- simpl in H.
+  destruct ab. { discriminate H. }
+-- destruct a.
+   { simpl in H. discriminate H. }
+
+   simpl in H. inversion H.
+   simpl.
+   destruct (unwrap_abstract l0).
+--- simpl. simpl in H. inversion H. auto.
+--- simpl in H. discriminate H.
+Qed.
 
 Lemma ptr_rt2 : rt2 t.
 Proof.
