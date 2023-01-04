@@ -260,7 +260,44 @@ exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
 /\ decode_int_raw PTR_SIZE Unsigned bl = Some addr
 /\ Constraints addr align = true.
 Proof.
-Admitted.
+unfold is_valid_for in H.
+destruct H as [l Hdec].
+unfold decode,decode_ptr in Hdec.
+
+destruct (unwrap_abstract l) eqn:Hunw; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+simpl in Hdec.
+destruct (decode_int_raw PTR_SIZE Unsigned l0) eqn:Hidec; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+unfold assuming in Hdec.
+simpl in Hdec.
+destruct (Constraints i align) eqn:Hconstr; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+simpl in Hdec.
+exists i, (unique_prov l).
+split.
+{ inversion Hdec. auto. }
+
+exists l0.
+assert (length l0 = PTR_SIZE). {
+  destruct (Nat.eq_dec (length l0) PTR_SIZE). { assumption. }
+  rewrite decode_int_none in Hidec; try assumption. discriminate Hidec.
+}
+
+split. {
+  destruct (rt2_int PTR_SIZE Unsigned l0 H ptr_size_gt0) as (i' & B & C & D).
+  assert (i = i'). {
+    rewrite <- B in Hidec. inversion Hidec. auto.
+  }
+  rewrite <- H0 in C.
+  apply C.
+}
+
+split; assumption.
+Qed.
 
 Lemma unique_prov_dev {b} {p} {b0} {l} : unique_prov (Init b p :: Init b0 p :: l) = unique_prov (Init b0 p :: l).
 Proof.
