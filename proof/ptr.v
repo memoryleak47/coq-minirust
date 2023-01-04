@@ -365,6 +365,49 @@ simpl.
 auto.
 Qed.
 
+(* TODO unused *)
+Inductive InitList : list AbstractByte -> list byte -> Type :=
+  | ILNil : InitList [] []
+  | ILCons b p l bl : InitList l bl
+                   -> unwrap_abstract l = Some bl
+                   -> InitList (Init b p :: l) (b :: bl).
+
+Lemma mk_init_list {l bl} (H: unwrap_abstract l = Some bl) : InitList l bl.
+Proof.
+generalize dependent bl.
+induction l as [|a l IH].
+{ intros. simpl in H. inversion H. apply ILNil. }
+
+intros bl H.
+destruct bl as [|b bl']. {
+  simpl in H.
+  destruct a. { discriminate H. }
+  destruct (unwrap_abstract l); simpl in H; discriminate H.
+}
+
+destruct a as [|b' p].
+{ simpl in H. discriminate H. }
+
+assert (b = b') as Hrew. {
+  simpl in H.
+  destruct (unwrap_abstract l).
+-- simpl in H. inversion H. auto.
+-- simpl in H. discriminate H.
+}
+rewrite <- Hrew. rewrite <- Hrew in H. clear Hrew b'.
+
+assert (unwrap_abstract l = Some bl'). {
+  simpl in H.
+  destruct (unwrap_abstract l).
+-- simpl in H. inversion H. auto.
+-- simpl in H. discriminate H.
+}
+
+apply (ILCons b _ _ _ ).
+- apply IH. assumption.
+- assumption.
+Qed.
+
 Lemma wrap_unique_le {bl} {l} (H: unwrap_abstract l = Some bl) : le (wrap_abstract bl (unique_prov l)) l.
 Proof.
 Admitted.
