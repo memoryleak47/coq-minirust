@@ -254,14 +254,12 @@ rewrite (lemma3 Hle p).
 - assumption.
 Qed.
 
-Lemma ptr_valid {v} (H: is_valid_for t v) :
+Lemma ptr_dec {v} {l} (Hdec: decode t l = Some v) :
 exists addr p, v = VPtr addr p /\
 exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
 /\ decode_int_raw PTR_SIZE Unsigned bl = Some addr
 /\ Constraints addr align = true.
 Proof.
-unfold is_valid_for in H.
-destruct H as [l Hdec].
 unfold decode,decode_ptr in Hdec.
 
 destruct (unwrap_abstract l) eqn:Hunw; cycle 1.
@@ -335,8 +333,9 @@ Lemma ptr_rt1 : rt1 t.
 Proof.
 intros _ v Hval.
 unfold is_valid_for in Hval.
-destruct (ptr_valid Hval) as [addr [p [Hrew [bl [Henc [Hdec Hconstr]]]]]].
-rewrite Hrew. rewrite Hrew in Hval. clear v Hrew.
+destruct (Hval) as [l Hl].
+destruct (ptr_dec Hl) as [addr [p [Hrew [bl [Henc [Hdec Hconstr]]]]]].
+rewrite Hrew. rewrite Hrew in Hval,Hl. clear v Hrew.
 
 exists (wrap_abstract bl p).
 split.
@@ -366,6 +365,8 @@ Qed.
 
 Lemma ptr_rt2 : rt2 t.
 Proof.
+intros Hwf l v Hdec.
+destruct (ptr_dec Hdec) as [addr [p [Hv [bl (He & Hd & Hconstr)]]]].
 Admitted.
 
 End ptr.
