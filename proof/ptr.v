@@ -2,6 +2,7 @@ Require Import defs encoding thm lemma wf int_encoding high low le utils int.
 Require Import Coq.Init.Byte.
 Require Import List.
 Require Import ZArith.
+Require Import Lia.
 Import ListNotations.
 
 Section ptr.
@@ -261,9 +262,37 @@ exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
 Proof.
 Admitted.
 
+Lemma unique_prov_dev {b} {p} {b0} {l} : unique_prov (Init b p :: Init b0 p :: l) = unique_prov (Init b0 p :: l).
+Proof.
+unfold unique_prov.
+simpl.
+destruct p.
+- simpl.
+  rewrite (proj2 (p_eq p p)); auto.
+- simpl. auto.
+Qed.
+
 Lemma unique_wrap {l} {p} (H: length l > 0): unique_prov (wrap_abstract l p) = p.
 Proof.
-Admitted.
+induction l as [|b l IH].
+- simpl in H.
+  assert (~(0 > 0)). { lia. }
+  exfalso.
+  apply H0.
+  assumption.
+- destruct l.
+-- unfold unique_prov.
+   simpl.
+   destruct p.
+--- simpl.
+    rewrite (proj2 (p_eq p p)); auto.
+--- simpl. auto.
+-- simpl.
+   simpl in IH.
+   rewrite unique_prov_dev.
+   apply IH.
+   lia.
+Qed.
 
 Lemma ptr_rt1 : rt1 t.
 Proof.
