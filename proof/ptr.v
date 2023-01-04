@@ -255,10 +255,10 @@ rewrite (lemma3 Hle p).
 Qed.
 
 Lemma ptr_dec {v} {l} (Hdec: decode t l = Some v) :
-exists addr p, v = VPtr addr p /\
+exists addr, v = VPtr addr (unique_prov l) /\
 exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
 /\ decode_int_raw PTR_SIZE Unsigned bl = Some addr
-/\ Constraints addr align = true.
+/\ Constraints addr align = true /\ unwrap_abstract l = Some bl.
 Proof.
 unfold decode,decode_ptr in Hdec.
 
@@ -275,7 +275,7 @@ destruct (Constraints i align) eqn:Hconstr; cycle 1.
 { simpl in Hdec. discriminate Hdec. }
 
 simpl in Hdec.
-exists i, (unique_prov l).
+exists i.
 split.
 { inversion Hdec. auto. }
 
@@ -294,7 +294,9 @@ split. {
   apply C.
 }
 
-split; assumption.
+split. { assumption. }
+split. { assumption. }
+auto.
 Qed.
 
 Lemma unique_prov_dev {b} {p} {b0} {l} : unique_prov (Init b p :: Init b0 p :: l) = unique_prov (Init b0 p :: l).
@@ -334,10 +336,10 @@ Proof.
 intros _ v Hval.
 unfold is_valid_for in Hval.
 destruct (Hval) as [l Hl].
-destruct (ptr_dec Hl) as [addr [p [Hrew [bl [Henc [Hdec Hconstr]]]]]].
+destruct (ptr_dec Hl) as [addr [Hrew [bl [Henc [Hdec [Hconstr _]]]]]].
 rewrite Hrew. rewrite Hrew in Hval,Hl. clear v Hrew.
 
-exists (wrap_abstract bl p).
+exists (wrap_abstract bl (unique_prov l)).
 split.
 { simpl. rewrite Henc. simpl. auto. }
 
@@ -363,10 +365,21 @@ simpl.
 auto.
 Qed.
 
+Lemma wrap_unique_le {bl} {l} (H: unwrap_abstract l = Some bl) : le (wrap_abstract bl (unique_prov l)) l.
+Proof.
+Admitted.
+
 Lemma ptr_rt2 : rt2 t.
 Proof.
 intros Hwf l v Hdec.
-destruct (ptr_dec Hdec) as [addr [p [Hv [bl (He & Hd & Hconstr)]]]].
-Admitted.
+destruct (ptr_dec Hdec) as [addr [Hv [bl (He & Hd & [Hconstr Hl])]]].
+rewrite Hv.
+exists (wrap_abstract bl (unique_prov l)).
+split.
+{ simpl. rewrite He. simpl. auto. }
+
+apply wrap_unique_le; assumption.
+Qed.
+
 
 End ptr.
