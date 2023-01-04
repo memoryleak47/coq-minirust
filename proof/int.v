@@ -2,11 +2,25 @@ Require Import defs encoding thm lemma wf int_encoding high low le.
 Require Import Coq.Init.Byte.
 Require Import List.
 Require Import ZArith.
+Require Import Lia.
 Import ListNotations.
+
+Lemma pow_pos (x: nat) : pow2 x > 0.
+Proof.
+induction x as [|x IH];
+simpl;
+lia.
+Qed.
 
 Lemma wf_int {size: Size} {signedness: Signedness} (Hwf: wf (TInt size signedness)) :
   size > 0.
-Admitted.
+Proof.
+simpl in Hwf.
+inversion Hwf.
+destruct H0.
+rewrite <- H0.
+apply pow_pos.
+Qed.
 
 Lemma lemma1 bl l :
   unwrap_abstract l = Some bl ->
