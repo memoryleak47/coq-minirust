@@ -1,4 +1,4 @@
-Require Import defs encoding thm lemma wf int_encoding high low le utils.
+Require Import defs encoding thm lemma wf int_encoding high low le utils int.
 Require Import Coq.Init.Byte.
 Require Import List.
 Require Import ZArith.
@@ -253,10 +253,43 @@ rewrite (lemma3 Hle p).
 - assumption.
 Qed.
 
+Lemma ptr_valid {v} (H: is_valid_for t v) :
+exists addr p, v = VPtr addr p /\
+exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
+/\ decode_int_raw PTR_SIZE Unsigned bl = Some addr
+/\ Constraints addr align = true.
+Proof.
+Admitted.
+
+Lemma unique_wrap {l} {p} : unique_prov (wrap_abstract l p) = p.
+Proof.
+Admitted.
+
 Lemma ptr_rt1 : rt1 t.
 Proof.
 intros _ v Hval.
-Admitted.
+unfold is_valid_for in Hval.
+destruct (ptr_valid Hval) as [addr [p [Hrew [bl [Henc [Hdec Hconstr]]]]]].
+rewrite Hrew. rewrite Hrew in Hval. clear v Hrew.
+
+exists (wrap_abstract bl p).
+split.
+{ simpl. rewrite Henc. simpl. auto. }
+
+simpl.
+unfold decode_ptr.
+rewrite unwrap_wrap.
+simpl.
+
+rewrite Hdec.
+simpl.
+rewrite unique_wrap.
+
+unfold assuming.
+rewrite Hconstr.
+simpl.
+auto.
+Qed.
 
 Lemma ptr_rt2 : rt2 t.
 Proof.
