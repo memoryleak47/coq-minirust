@@ -21,7 +21,7 @@ Proof.
 destruct ty.
 - apply bool_rt2.
 - apply int_rt2.
-- apply cheat.
+- apply ptr_rt2.
 - apply cheat.
 - apply cheat.
 - apply cheat.
@@ -32,7 +32,7 @@ Proof.
 destruct ty.
 - apply bool_mono1.
 - apply int_mono1.
-- apply cheat.
+- apply ptr_mono1.
 - apply cheat.
 - apply cheat.
 - apply cheat.
@@ -43,7 +43,7 @@ Proof.
 destruct ty.
 - apply bool_mono2.
 - apply int_mono2.
-- apply cheat.
+- apply ptr_mono2.
 - apply cheat.
 - apply cheat.
 - apply cheat.
