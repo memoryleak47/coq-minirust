@@ -204,14 +204,16 @@ exists (wrap_abstract l p), (wrap_abstract l p').
 split; try auto.
 split; try auto.
 clear H.
+
 induction l as [|b l IH].
-- trivial.
-- simpl.
-  split.
--- destruct p,p'; repeat (split || reflexivity || simpl in Hle).
---- inversion Hle. apply (proj1 (p_eq p p0)). assumption.
---- inversion Hle. assumption.
--- apply IH.
+{ simpl. trivial. }
+
+simpl.
+split.
+- destruct p,p'; repeat (split || reflexivity || simpl in Hle).
+-- inversion Hle. apply (proj1 (p_eq p p0)). assumption.
+-- inversion Hle. assumption.
+- apply IH.
 Qed.
 
 Lemma ptr_mono2 : mono2 t.
