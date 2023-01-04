@@ -261,7 +261,7 @@ exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
 Proof.
 Admitted.
 
-Lemma unique_wrap {l} {p} : unique_prov (wrap_abstract l p) = p.
+Lemma unique_wrap {l} {p} (H: length l > 0): unique_prov (wrap_abstract l p) = p.
 Proof.
 Admitted.
 
@@ -283,7 +283,14 @@ simpl.
 
 rewrite Hdec.
 simpl.
-rewrite unique_wrap.
+
+destruct (Nat.eq_dec (length bl) PTR_SIZE) eqn:E; cycle 1.
+{ rewrite decode_int_none in Hdec; try assumption. discriminate Hdec. }
+
+assert (length bl > 0) as H.
+{ rewrite e. apply ptr_size_gt0. }
+
+rewrite (unique_wrap H).
 
 unfold assuming.
 rewrite Hconstr.
