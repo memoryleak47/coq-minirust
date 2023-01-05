@@ -1,6 +1,7 @@
 Require Import defs int_encoding.
 Require Import ZArith.
 Require Import List.
+Import ListNotations.
 
 Definition valid_size (size: Size) : Prop := (int_in_range (Z.of_nat size) PTR_SIZE Signed) = true.
 
@@ -22,9 +23,14 @@ let f := (fun chunk =>
   size >= stop
 ) in Forall f chunks.
 
-(* TODO solve recursion problems *)
-Definition fields_wf (fields: Fields) : Prop.
-Admitted.
+
+Definition fields_wf (fields: Fields) (wf_call: Ty -> Prop) :=
+(fix fields_wf (fields: Fields) :=
+  match fields with
+  | [] => True
+  | (_, ty)::fields' => wf_call ty /\ fields_wf fields'
+  end
+) fields.
 
 Definition fields_disjoint (fields: Fields) : Prop.
 Admitted.
@@ -50,12 +56,12 @@ Fixpoint wf (t: Ty) : Prop :=
   | TBool => True
   | TPtr _ _ => True
   | TTuple fields size => fields_fit_size fields size
-                      /\ fields_wf fields
+                      /\ fields_wf fields wf
                       /\ fields_disjoint fields
   | TArray elem_ty count => wf elem_ty
                         /\ (count >= 0)%Z
   | TUnion fields chunks size => fields_fit_size fields size
-                             /\ fields_wf fields
+                             /\ fields_wf fields wf
                              /\ fields_in_chunks fields chunks
                              /\ chunks_sorted_and_disjoint chunks
                              /\ chunks_fit_size chunks size
