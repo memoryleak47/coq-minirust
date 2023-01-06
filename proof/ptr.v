@@ -2,7 +2,7 @@ Require Import Coq.Init.Byte List ZArith Lia.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm wf int_encoding le utils.
-From Minirust.lemma Require Import unique_prov wrap_abstract le.
+From Minirust.lemma Require Import unique_prov wrap_abstract le utils.
 From Minirust.proof Require Import high int.
 
 Section ptr.
@@ -29,24 +29,59 @@ Notation Constraints addr align := (
   | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
   end).
 
+Lemma ptr_dec {v} {l} (Hdec: decode t l = Some v) :
+exists addr, v = VPtr addr (unique_prov l) /\
+exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
+/\ decode_int_raw PTR_SIZE Unsigned bl = Some addr
+/\ Constraints addr align = true /\ unwrap_abstract l = Some bl.
+Proof.
+unfold decode,decode_ptr in Hdec.
+
+destruct (unwrap_abstract l) eqn:Hunw; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+simpl in Hdec.
+destruct (decode_int_raw PTR_SIZE Unsigned l0) eqn:Hidec; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+unfold assuming in Hdec.
+simpl in Hdec.
+destruct (Constraints i align) eqn:Hconstr; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+simpl in Hdec.
+exists i.
+split.
+{ inversion Hdec. auto. }
+
+exists l0.
+assert (length l0 = PTR_SIZE). {
+  destruct (Nat.eq_dec (length l0) PTR_SIZE). { assumption. }
+  rewrite decode_int_none in Hidec; try assumption. discriminate Hidec.
+}
+
+split. {
+  destruct (rt2_int PTR_SIZE Unsigned l0 H ptr_size_gt0) as (i' & B & C & D).
+  assert (i = i'). {
+    rewrite <- B in Hidec. inversion Hidec. auto.
+  }
+  rewrite <- H0 in C.
+  apply C.
+}
+
+split. { assumption. }
+split. { assumption. }
+auto.
+Qed.
+
 Lemma ptr_mono1 : mono1 t.
 Proof.
 intros Hwf v1 v2 Hle Hv1 Hv2.
-(* TODO extract to lemma *)
 assert (exists a b, VPtr a b = v1). {
-  destruct Hv1. unfold decode,decode_ptr in H.
-  destruct (unwrap_abstract x); cycle 1. { discriminate H. }
-  simpl in H.
-  destruct (decode_int_raw PTR_SIZE Unsigned l); cycle 1. { discriminate H. }
-  simpl in H.
-  unfold utils.assuming in H. simpl in H.
-  destruct (Constraints i align) eqn:E; cycle 1. { discriminate H. }
-  simpl in H.
-  injection H.
-  intros L.
-  exists i.
-  eexists _.
-  apply L.
+  destruct Hv1 as [l H].
+  destruct (ptr_dec H) as [addr [Hv [lb [Henc [Hdec HConstr]]]]].
+  exists addr, (unique_prov l).
+  auto.
 }
 destruct H as [addr].
 destruct H as [p Hv].
@@ -144,51 +179,6 @@ destruct (unique_prov l1) eqn:E; cycle 1. { trivial. }
 rewrite (unique_le Hle p).
 - apply (proj2 (p_eq p p)). auto.
 - assumption.
-Qed.
-
-Lemma ptr_dec {v} {l} (Hdec: decode t l = Some v) :
-exists addr, v = VPtr addr (unique_prov l) /\
-exists bl, encode_int_raw PTR_SIZE Unsigned addr = Some bl
-/\ decode_int_raw PTR_SIZE Unsigned bl = Some addr
-/\ Constraints addr align = true /\ unwrap_abstract l = Some bl.
-Proof.
-unfold decode,decode_ptr in Hdec.
-
-destruct (unwrap_abstract l) eqn:Hunw; cycle 1.
-{ simpl in Hdec. discriminate Hdec. }
-
-simpl in Hdec.
-destruct (decode_int_raw PTR_SIZE Unsigned l0) eqn:Hidec; cycle 1.
-{ simpl in Hdec. discriminate Hdec. }
-
-unfold assuming in Hdec.
-simpl in Hdec.
-destruct (Constraints i align) eqn:Hconstr; cycle 1.
-{ simpl in Hdec. discriminate Hdec. }
-
-simpl in Hdec.
-exists i.
-split.
-{ inversion Hdec. auto. }
-
-exists l0.
-assert (length l0 = PTR_SIZE). {
-  destruct (Nat.eq_dec (length l0) PTR_SIZE). { assumption. }
-  rewrite decode_int_none in Hidec; try assumption. discriminate Hidec.
-}
-
-split. {
-  destruct (rt2_int PTR_SIZE Unsigned l0 H ptr_size_gt0) as (i' & B & C & D).
-  assert (i = i'). {
-    rewrite <- B in Hidec. inversion Hidec. auto.
-  }
-  rewrite <- H0 in C.
-  apply C.
-}
-
-split. { assumption. }
-split. { assumption. }
-auto.
 Qed.
 
 Lemma ptr_rt1 : rt1 t.
