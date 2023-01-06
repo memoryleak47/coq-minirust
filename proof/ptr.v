@@ -32,6 +32,7 @@ Notation Constraints addr align := (
 Lemma ptr_mono1 : mono1 t.
 Proof.
 intros Hwf v1 v2 Hle Hv1 Hv2.
+(* TODO extract to lemma *)
 assert (exists a b, VPtr a b = v1). {
   destruct Hv1. unfold decode,decode_ptr in H.
   destruct (unwrap_abstract x); cycle 1. { discriminate H. }
@@ -62,6 +63,7 @@ assert (exists b, VPtr addr b = v2). {
 destruct H as [p' Hrew].
 rewrite <- Hrew. rewrite <- Hrew in Hle,Hv2. clear Hrew v2.
 unfold encode,encode_ptr.
+(* TODO extract to lemma *)
 assert (exists l, encode_int_raw PTR_SIZE Unsigned addr = Some l). {
   destruct (encode_int_raw PTR_SIZE Unsigned addr) eqn:E. { exists l. reflexivity. }
   exfalso.
@@ -189,38 +191,6 @@ split. { assumption. }
 auto.
 Qed.
 
-Lemma unique_prov_dev {b} {p} {b0} {l} : unique_prov (Init b p :: Init b0 p :: l) = unique_prov (Init b0 p :: l).
-Proof.
-unfold unique_prov.
-simpl.
-destruct p.
-- simpl.
-  rewrite (proj2 (p_eq p p)); auto.
-- simpl. auto.
-Qed.
-
-Lemma unique_wrap {l} {p} (H: length l > 0): unique_prov (wrap_abstract l p) = p.
-Proof.
-induction l as [|b l IH].
-- simpl in H.
-  assert (~(0 > 0)). { lia. }
-  exfalso.
-  apply H0.
-  assumption.
-- destruct l.
--- unfold unique_prov.
-   simpl.
-   destruct p.
---- simpl.
-    rewrite (proj2 (p_eq p p)); auto.
---- simpl. auto.
--- simpl.
-   simpl in IH.
-   rewrite unique_prov_dev.
-   apply IH.
-   lia.
-Qed.
-
 Lemma ptr_rt1 : rt1 t.
 Proof.
 intros _ v Hval.
@@ -253,130 +223,6 @@ unfold assuming.
 rewrite Hconstr.
 simpl.
 auto.
-Qed.
-
-(* TODO unused *)
-Inductive InitList : list AbstractByte -> list byte -> Type :=
-  | ILNil : InitList [] []
-  | ILCons b p l bl : InitList l bl
-                   -> unwrap_abstract l = Some bl
-                   -> InitList (Init b p :: l) (b :: bl).
-
-Lemma mk_init_list {l bl} (H: unwrap_abstract l = Some bl) : InitList l bl.
-Proof.
-generalize dependent bl.
-induction l as [|a l IH].
-{ intros. simpl in H. inversion H. apply ILNil. }
-
-intros bl H.
-destruct bl as [|b bl']. {
-  simpl in H.
-  destruct a. { discriminate H. }
-  destruct (unwrap_abstract l); simpl in H; discriminate H.
-}
-
-destruct a as [|b' p].
-{ simpl in H. discriminate H. }
-
-assert (b = b') as Hrew. {
-  simpl in H.
-  destruct (unwrap_abstract l).
--- simpl in H. inversion H. auto.
--- simpl in H. discriminate H.
-}
-rewrite <- Hrew. rewrite <- Hrew in H. clear Hrew b'.
-
-assert (unwrap_abstract l = Some bl'). {
-  simpl in H.
-  destruct (unwrap_abstract l).
--- simpl in H. inversion H. auto.
--- simpl in H. discriminate H.
-}
-
-apply (ILCons b _ _ _ ).
-- apply IH. assumption.
-- assumption.
-Qed.
-
-Lemma le_list_step {x1 x2 : AbstractByte} {l1 l2} : le (x1 :: l1) (x2 :: l2) = (le x1 x2 /\ le l1 l2).
-Proof.
-auto.
-Qed.
-
-Lemma wrap_unique_le {bl l} (H: unwrap_abstract l = Some bl) : le (wrap_abstract bl (unique_prov l)) l.
-Proof.
-destruct (unique_prov l) eqn:Huniq; cycle 1.
-{ apply unwrap_le; assumption. }
-
-assert (wrap_abstract bl (Some p) = l); cycle 1.
-{ rewrite H0. apply (le_list_abstract_byte_refl l). }
-
-generalize dependent bl.
-induction l as [|ab l IH].
-{ unfold unique_prov in Huniq. simpl in Huniq. discriminate Huniq. }
-
-intros bl H.
-destruct bl. {
-  destruct ab.
-  - simpl in H. discriminate H.
-  - simpl in H. destruct (unwrap_abstract l); simpl in H; discriminate H.
-}
-
-simpl.
-assert (Init b (Some p) = ab) as Hab. {
-  destruct ab.
-  { simpl in H. discriminate H. }
-
-  assert (b = b0). {
-    simpl in H.
-    destruct (unwrap_abstract l).
-    - simpl in H. inversion H. auto.
-    - simpl in H. discriminate H.
-  }
-
-  rewrite H0.
-  f_equal.
-
-  unfold unique_prov in Huniq.
-  destruct o; cycle 1.
-  { simpl in Huniq. discriminate Huniq. }
-
-  simpl in Huniq.
-  destruct ((P_EQ p0 p0 &&
-           forallb
-             (fun x : AbstractByte =>
-              match x with
-              | Init _ (Some a) =>
-                  P_EQ a p0
-              | _ => false
-              end) l))%bool eqn:E.
-  - simpl in Huniq. inversion Huniq. auto.
-  - simpl in Huniq. discriminate Huniq.
-}
-
-rewrite Hab.
-f_equal.
-
-destruct l eqn:E. {
-  destruct ab.
-  { simpl in Hab. discriminate Hab. }
-
-  simpl in H. inversion H.
-  simpl. auto.
-}
-
-apply IH.
-- apply (unique_prov_cons2 Huniq).
-- simpl in H.
-  destruct ab. { discriminate H. }
--- destruct a.
-   { simpl in H. discriminate H. }
-
-   simpl in H. inversion H.
-   simpl.
-   destruct (unwrap_abstract l0).
---- simpl. simpl in H. inversion H. auto.
---- simpl in H. discriminate H.
 Qed.
 
 Lemma ptr_rt2 : rt2 t.

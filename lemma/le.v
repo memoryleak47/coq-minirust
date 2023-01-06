@@ -103,3 +103,7 @@ apply le_option_gen_refl.
 apply le_val_refl.
 Qed.
 
+Lemma le_list_step {x1 x2 : AbstractByte} {l1 l2} : le (x1 :: l1) (x2 :: l2) = (le x1 x2 /\ le l1 l2).
+Proof.
+auto.
+Qed.

@@ -25,7 +25,6 @@ destruct l.
 --- destruct b; reflexivity.
 Qed.
 
-(* Lemma destruct_bool (v: Value) : is_valid_for TBool v -> exists b, v = VBool b. *)
 Lemma valid_bool (v: Value) : is_valid_for TBool v -> exists b, v = VBool b.
 Proof.
 unfold is_valid_for.
