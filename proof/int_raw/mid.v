@@ -12,7 +12,7 @@ Lemma double_base {size: Size} (H: size > 0) :
   (2 ^ (Z.of_nat size * 8))%Z = ((basenum size) * 2)%Z.
 Proof.
 unfold basenum.
-destruct (mk_var (Z.of_nat size * 8))%Z as [x Hx].
+declare x Hx (Z.of_nat size * 8)%Z.
 assert (x > 0)%Z as B. { lia. }
 rewrite Hx. clear - x B.
 destruct x; try (simpl; lia).
@@ -93,7 +93,7 @@ Lemma lemma4 (size: Size) (int: Int)
 Proof.
 rewrite (proj2 (Z.geb_le _ _)). { reflexivity. }
 assert (2 ^ (Z.of_nat size * 8 - 1) <= (- 2 ^ (Z.of_nat size * 8 - 1))%Z + 2 ^ (Z.of_nat size * 8))%Z; cycle 1. { lia. }
-destruct (mk_var (Z.of_nat size * 8))%Z as [x Hx]. rewrite Hx. clear - x.
+declare x Hx (Z.of_nat size * 8)%Z. rewrite Hx. clear - x.
 destruct x; try (simpl; lia).
 assert (2^(Z.pos p) = 2 * 2^(Z.pos p-1))%Z; try lia.
 rewrite <- (Z.pow_succ_r 2); try lia.
@@ -160,7 +160,7 @@ rewrite E.
 split. { reflexivity. }
 split.
 ++ unfold decode_int_le.
-   destruct (mk_var (lemma2 _ _ H E Hs)) as [HR _].
+   have HR (lemma2 _ _ H E Hs).
    rewrite (uint_le_encode_valid); try apply HR.
    f_equal.
    rewrite Nat.eqb_refl.

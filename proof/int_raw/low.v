@@ -184,9 +184,9 @@ rewrite N2Z.id.
 unfold ByteV2N.
 unfold N2ByteV_sized.
 unfold Basics.compose.
-destruct (mk_var (map Ascii.ascii_of_byte l)) as [a1 Ha1]. rewrite Ha1.
-destruct (mk_var (Vector.of_list a1)) as [a2 Ha2]. rewrite Ha2.
-destruct (mk_var (ByteVector.to_Bvector a2)) as [a3 Ha3]. rewrite Ha3.
+declare a1 Ha1 (map Ascii.ascii_of_byte l). rewrite Ha1.
+declare a2 Ha2 (Vector.of_list a1). rewrite Ha2.
+declare a3 Ha3 (ByteVector.to_Bvector a2). rewrite Ha3.
 assert (length a1 = size) as Hlen. {
   f_equal.
   rewrite <- Ha1.

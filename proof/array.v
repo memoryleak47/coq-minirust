@@ -98,7 +98,7 @@ assert (transpose (map
  (fun x : Value => encode elem_ty x >>= decode elem_ty) vs) = Some vs); cycle 1.
 { rewrite H0. simpl. auto. }
 
-destruct (mk_var (valid_array Hval)) as [Hval' _]. clear Hval.
+have Hval' (valid_array Hval). clear Hval.
 
 generalize dependent l0.
 induction vs as [|v vs' IH].

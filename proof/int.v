@@ -58,7 +58,7 @@ assert (length (wrap_abstract bl None) = size). {
   rewrite wrap_len. assumption.
 }
 
-destruct (mk_var (decode (TInt size signedness) (wrap_abstract bl None))) as [d Hd].
+declare d Hd (decode (TInt size signedness) (wrap_abstract bl None)).
 assert (decode (TInt size signedness) (wrap_abstract bl None) = d) as Hd'. { assumption. }
 unfold decode,decode_int in Hd.
 rewrite unwrap_wrap in Hd. simpl in Hd.
@@ -91,7 +91,7 @@ destruct (decode_int_raw size signedness bl); cycle 1. {
 simpl in Hdec.
 inversion Hdec.
 rewrite <- H0 in Hdec'. clear v Hdec H0.
-destruct (mk_var (unwrap_len l bl Hbl)) as [Hlen _].
+have Hlen (unwrap_len l bl Hbl).
 
 assert (length bl = size). {
   unfold decode,decode_int in Hdec'. simpl in Hdec'.
@@ -165,7 +165,7 @@ set (Hs := wf_int Hwf).
 
 destruct (valid_int Hval1) as [l1 P1]. apply Hs.
 destruct P1.
-destruct (mk_var (lemma2 Hle)) as [Hv12 _].
+have Hv12 (lemma2 Hle).
 rewrite Hv12.
 clear Hle v2 Hv12 Hval2.
 exists (wrap_abstract bl None),(wrap_abstract bl None).
@@ -178,9 +178,9 @@ Qed.
 Lemma int_mono2 (size: Size) (signedness: Signedness) : mono2 (TInt size signedness).
 Proof.
 intros Hwf l1 l2 Hle.
-destruct (mk_var (wf_int Hwf)) as [Hs _].
+have Hs (wf_int Hwf).
 destruct (unwrap_abstract l1) eqn:E.
-- destruct (mk_var (unwrap_abstract_le_some Hle l E)) as [H _].
+- have H (unwrap_abstract_le_some Hle l E).
   unfold decode,decode_int. rewrite E,H.
   apply le_option_val_refl.
 - unfold decode,decode_int. rewrite E.
