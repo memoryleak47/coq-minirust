@@ -1,4 +1,5 @@
 From Minirust.def Require Import defs encoding le.
+From Minirust.lemma Require Import le.
 
 Lemma unwrap_le bl l :
   unwrap_abstract l = Some bl ->
@@ -65,3 +66,43 @@ induction l as [|b l IH].
 - reflexivity.
 - simpl. rewrite IH. simpl. reflexivity.
 Qed.
+
+Lemma unwrap_le_some {l1 l2: list AbstractByte} {lb} (Hle: le l1 l2) (Hunw: unwrap_abstract l1 = Some lb) : unwrap_abstract l2 = Some lb.
+Proof.
+generalize dependent lb.
+induction (mk_le_list _ _ Hle) as [|ab1 ab2 l1 l2 HLe IH HLeA Hlec].
+{ intros. assumption. }
+
+intros lb Hunw.
+
+destruct ab1 as [|b1 o1].
+{ simpl in Hunw. discriminate Hunw. }
+
+destruct ab2 as [|b2 o2].
+{ simpl in Hlec. destruct o1; contradiction (proj1 Hlec). }
+
+destruct (unwrap_abstract l1) as [lb1|] eqn:Hunw1; cycle 1.
+{ simpl in Hunw. rewrite Hunw1 in Hunw. simpl in Hunw. discriminate Hunw. }
+
+assert (le l1 l2) as Hle'.
+{ simpl in Hle. inversion Hle. assumption. }
+
+assert (unwrap_abstract l2 = Some lb1) as Hunw2.
+{ apply (IH Hle' lb1). auto. }
+
+assert (b1 = b2). {
+  inversion HLeA.
+  - rewrite <- H. auto.
+  - reflexivity.
+}
+
+simpl. rewrite Hunw2.
+simpl. f_equal.
+
+simpl in Hunw. rewrite Hunw1 in Hunw. simpl in Hunw.
+injection Hunw.
+intros A.
+rewrite <- H.
+assumption.
+Qed.
+

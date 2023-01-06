@@ -29,45 +29,6 @@ Notation Constraints addr align := (
   | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
   end).
 
-Lemma lemma1 (l1 l2: list AbstractByte) lb (Hle: le l1 l2) (Hunw: unwrap_abstract l1 = Some lb) : unwrap_abstract l2 = Some lb.
-Proof.
-generalize dependent lb.
-induction (mk_le_list _ _ Hle) as [|ab1 ab2 l1 l2 HLe IH HLeA Hlec].
-{ intros. assumption. }
-
-intros lb Hunw.
-
-destruct ab1 as [|b1 o1].
-{ simpl in Hunw. discriminate Hunw. }
-
-destruct ab2 as [|b2 o2].
-{ simpl in Hlec. destruct o1; contradiction (proj1 Hlec). }
-
-destruct (unwrap_abstract l1) as [lb1|] eqn:Hunw1; cycle 1.
-{ simpl in Hunw. rewrite Hunw1 in Hunw. simpl in Hunw. discriminate Hunw. }
-
-assert (le l1 l2) as Hle'.
-{ simpl in Hle. inversion Hle. assumption. }
-
-assert (unwrap_abstract l2 = Some lb1) as Hunw2.
-{ apply (IH Hle' lb1). auto. }
-
-assert (b1 = b2). {
-  inversion HLeA.
-  - rewrite <- H. auto.
-  - reflexivity.
-}
-
-simpl. rewrite Hunw2.
-simpl. f_equal.
-
-simpl in Hunw. rewrite Hunw1 in Hunw. simpl in Hunw.
-injection Hunw.
-intros A.
-rewrite <- H.
-assumption.
-Qed.
-
 
 Lemma lemma2 {a} {b} {l} {p} (H: unique_prov (a :: b :: l) = Some p) :
   unique_prov (b :: l) = Some p.
@@ -238,7 +199,7 @@ unfold utils.assuming. rewrite Hc.
 simpl.
 
 assert (unwrap_abstract l2 = Some l).
-{ apply (lemma1 l1); assumption. }
+{ apply (unwrap_le_some Hle Hunw); assumption. }
 
 rewrite H.
 simpl.

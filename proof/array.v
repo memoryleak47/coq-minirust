@@ -11,22 +11,11 @@ Context (count: Int).
 
 Notation t := (TArray elem_ty count).
 
-Lemma bind_some {T T'} {x: T} {f: T -> option T'} : (Some x >>= f) = f x.
-Proof.
-simpl. auto.
-Qed.
-
-Lemma transpose_map {T1 T2 T3} {f: T1 -> option T2} {g: T2 -> option T3} {l: list T1} {l'} (H: transpose (map f l) = Some l') :
-map g l' = map (fun x => (f x) >>= g) l.
-Proof.
-Admitted.
 
 Lemma valid_array {vs} (H: is_valid_for t (VTuple vs)) : Forall (fun v => is_valid_for elem_ty v) vs.
 Proof.
 Admitted.
 
-Lemma transpose_some {T} {x: T} {l: list (option T)} : transpose ((Some x) :: l) = (transpose l o-> (fun a => x :: a)).
-Admitted.
 
 Lemma array_encode_none {v} (H: encode t v = None) : ~is_valid_for t v.
 Proof.

@@ -115,37 +115,6 @@ simpl.
 rewrite H2. simpl. f_equal.
 Qed.
 
-Lemma unwrap_abstract_le_some {l1 l2: list AbstractByte} (H: le l1 l2) :
-  forall bl, (unwrap_abstract l1 = Some bl) -> unwrap_abstract l2 = Some bl.
-Proof.
-intros bytes Hunw1.
-generalize dependent bytes.
-induction (mk_le_list _ _ H) as [|b1 b2 l1 l2 HLeL IH HLeB Hle].
-- intros bytes. intros. assumption.
-- intros bytes Hbytes.
-  destruct b1.
--- simpl in Hbytes. discriminate Hbytes.
--- simpl in Hbytes.
-   destruct (unwrap_abstract l1) eqn:E; cycle 1. { simpl in Hbytes. discriminate Hbytes. }
-   simpl in Hbytes. inversion Hbytes.
-   assert (le l1 l2). { simpl in H. destruct H. auto. }
-   inversion Hbytes.
-   assert (unwrap_abstract l2 = Some l). {
-     apply IH. assumption. auto.
-   }
-   destruct b2 eqn:F.
---- simpl in Hle.
-    exfalso.
-    destruct o; apply (proj1 Hle).
---- simpl. rewrite H2. simpl. f_equal. f_equal.
-    simpl in Hle.
-    destruct o,o0; inversion Hle.
----- inversion H4. rewrite H6. auto.
----- inversion H4.
----- rewrite H4. auto.
----- rewrite H4. auto.
-Qed.
-
 Lemma valid_int {size: Size} {signedness: Signedness} {v: Value} (H: is_valid_for (TInt size signedness) v) :
   (size > 0) ->
   exists (l: list AbstractByte), IntPair size signedness v l.
@@ -180,7 +149,7 @@ Proof.
 intros Hwf l1 l2 Hle.
 have Hs (wf_int Hwf).
 destruct (unwrap_abstract l1) eqn:E.
-- have H (unwrap_abstract_le_some Hle l E).
+- have H (unwrap_le_some Hle E).
   unfold decode,decode_int. rewrite E,H.
   apply le_option_val_refl.
 - unfold decode,decode_int. rewrite E.
