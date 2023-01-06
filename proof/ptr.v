@@ -29,77 +29,6 @@ Notation Constraints addr align := (
   | Ref => ((addr >? 0)%Z && (addr mod (Z.of_nat align) =? 0)%Z)%bool
   end).
 
-
-Lemma lemma2 {a} {b} {l} {p} (H: unique_prov (a :: b :: l) = Some p) :
-  unique_prov (b :: l) = Some p.
-Proof.
-
-destruct a.
-{ discriminate H. }
-
-destruct o; cycle 1.
-{ discriminate H. }
-
-destruct b.
-{ unfold unique_prov in H. simpl in H. rewrite (proj2 (p_eq p0 p0)) in H. discriminate H. auto. }
-
-destruct o; cycle 1.
-{ unfold unique_prov in H. simpl in H. rewrite (proj2 (p_eq p0 p0)) in H. discriminate H. auto. }
-
-destruct (P_EQ p0 p1) eqn:E.
-- rewrite (proj1 (p_eq p0 p1)) in H; cycle 1. { assumption. }
-  unfold unique_prov in H.
-  simpl in H.
-  rewrite (proj2 (p_eq p1 p1)) in H; cycle 1. { auto. }
-  simpl in H.
-  unfold unique_prov.
-  simpl.
-  rewrite (proj2 (p_eq p1 p1)); cycle 1. { auto. }
-  simpl. assumption.
-- unfold unique_prov in H.
-  simpl in H.
-  rewrite (proj2 (p_eq p0 p0)) in H; cycle 1. { auto. }
-  assert (p0 <> p1).
-  { apply p_eq_false. assumption. }
-  rewrite (proj2 (p_eq_false p1 p0)) in H; cycle 1.
-  { auto. }
-  simpl in H.
-  discriminate H.
-Qed.
-
-Lemma lemma3 {l1 l2: list AbstractByte} (Hle: le l1 l2) p (H: unique_prov l1 = Some p) :
-  unique_prov l2 = Some p.
-Proof.
-assert (l1 = l2); cycle 1.
-{ rewrite <- H0. auto. }
-
-induction (mk_le_list _ _ Hle) as [| ab1 ab2 l1 l2 HLe IH HLeAB _].
-{ auto. }
-
-assert (le l1 l2) as Hle'.
-{ simpl in Hle. inversion Hle. assumption. }
-
-assert (ab1 = ab2). {
-  destruct ab1.
-  { unfold unique_prov in H. simpl in H. discriminate H. }
-
-  destruct HLeAB.
-  - unfold unique_prov in H. discriminate H.
-  - unfold unique_prov in H. discriminate H.
-  - simpl in Hle. inversion Hle. inversion H0; auto.
-}
-rewrite <- H0. rewrite <- H0 in Hle,HLeAB. clear H0 ab2.
-f_equal.
-
-destruct l1.
-- destruct l2.
--- auto.
--- contradiction Hle'.
-- apply IH.
--- assumption.
--- apply (lemma2 H).
-Qed.
-
 Lemma ptr_mono1 : mono1 t.
 Proof.
 intros Hwf v1 v2 Hle Hv1 Hv2.
@@ -210,7 +139,7 @@ simpl.
 split. { auto. }
 
 destruct (unique_prov l1) eqn:E; cycle 1. { trivial. }
-rewrite (lemma3 Hle p).
+rewrite (unique_le Hle p).
 - apply (proj2 (p_eq p p)). auto.
 - assumption.
 Qed.
@@ -437,7 +366,7 @@ destruct l eqn:E. {
 }
 
 apply IH.
-- apply (lemma2 Huniq).
+- apply (unique_prov_cons2 Huniq).
 - simpl in H.
   destruct ab. { discriminate H. }
 -- destruct a.
