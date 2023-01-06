@@ -1,5 +1,4 @@
--R def Minirust.def
--R proof Minirust.proof
+-R . Minirust
 
 def/defs.v
 def/le.v
