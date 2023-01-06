@@ -2,7 +2,8 @@ Require Import Coq.Init.Byte List ZArith Lia.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm wf int_encoding le.
-From Minirust.proof Require Import lemma low high.
+From Minirust.lemma Require Import prov utils le.
+From Minirust.proof Require Import high.
 
 Lemma pow_pos (x: nat) : pow2 x > 0.
 Proof.
@@ -21,34 +22,6 @@ rewrite <- H0.
 apply pow_pos.
 Qed.
 
-Lemma lemma1 bl l :
-  unwrap_abstract l = Some bl ->
-  le (wrap_abstract bl None) l.
-Proof.
-generalize dependent bl.
-induction l as [|a l IH].
-- intros bl A. inversion A.
-  simpl.
-  trivial.
-- intros bl A. destruct a.
--- discriminate A.
--- simpl in A.
-   destruct (unwrap_abstract l); cycle 1.
---- discriminate A.
---- simpl in A. inversion A.
-    destruct bl as [|b' bl'].
----- discriminate H0.
----- inversion H0.
-     rewrite <- H1. rewrite <- H1 in H0, A. clear b' H1.
-     rewrite H2 in H0, IH, A. clear H2 l0 H0 A.
-
-     assert (le (wrap_abstract bl' None) l) as IH'. { apply IH. reflexivity. }
-     clear IH.
-     simpl.
-     split. { reflexivity. }
-     apply IH'.
-Qed.
-
 Lemma lemma2 {i1: Int} {v2: Value} (H: le (VInt i1) v2) : v2 = (VInt i1).
 Proof.
 destruct v2; try (simpl in H; exfalso; apply H).
@@ -60,44 +33,6 @@ Inductive IntPair : Size -> Signedness -> Value -> list AbstractByte -> Prop :=
  | mkIntPair {size: Size} {signedness: Signedness} {i: Int} {l: list AbstractByte} {bl: list byte} :
   unwrap_abstract l = Some bl -> length l = size -> length bl = size -> int_in_range i size signedness = true ->
   (decode (TInt size signedness) l = Some (VInt i)) -> ((encode (TInt size signedness) (VInt i)) = Some (wrap_abstract bl None)) -> IntPair size signedness (VInt i) l.
-
-Lemma wrap_len bl : length (wrap_abstract bl None) = length bl.
-Proof.
-induction bl as [|b bl IH].
-- reflexivity.
-- simpl. f_equal. rewrite IH. reflexivity.
-Qed.
-
-(* TODO simplify *)
-Lemma unwrap_len l bl : (unwrap_abstract l = Some bl) -> length bl = length l.
-Proof.
-generalize dependent bl.
-induction l as [|a l IH].
-- intros bl A.
-  simpl in A.
-  inversion A.
-  reflexivity.
-- intros bl A.
-  destruct a.
--- simpl in A. discriminate A.
--- simpl in A.
-   destruct bl.
---- destruct (unwrap_abstract l).
----- simpl in A. discriminate A.
----- simpl in A. discriminate A.
---- simpl. f_equal. simpl in A. rewrite IH. { reflexivity. }
-    destruct (unwrap_abstract l).
----- simpl in A. inversion A. reflexivity.
----- simpl in A. discriminate A.
-Qed.
-
-Lemma unwrap_wrap l : forall p, unwrap_abstract (wrap_abstract l p) = Some l.
-Proof.
-intros p.
-induction l as [|b l IH].
-- reflexivity.
-- simpl. rewrite IH. simpl. reflexivity.
-Qed.
 
 Lemma encode_int_pair {size: Size} {signedness: Signedness} {v: Value} {l: list AbstractByte} (H: encode (TInt size signedness) v = Some l) :
   (size > 0) ->
@@ -236,7 +171,7 @@ clear Hle v2 Hv12 Hval2.
 exists (wrap_abstract bl None),(wrap_abstract bl None).
 split; try apply H4.
 split. assumption.
-apply lemma1.
+apply unwrap_le.
 apply unwrap_wrap.
 Qed.
 
@@ -319,6 +254,6 @@ split.
   rewrite Henc'.
   simpl.
   reflexivity.
-- apply lemma1.
+- apply unwrap_le.
   assumption.
 Qed.

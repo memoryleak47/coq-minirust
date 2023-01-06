@@ -2,7 +2,8 @@ Require Import Coq.Init.Byte List ZArith Lia.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm wf int_encoding le utils.
-From Minirust.proof Require Import lemma high low int.
+From Minirust.lemma Require Import prov le.
+From Minirust.proof Require Import high int.
 
 Section ptr.
 
@@ -415,7 +416,7 @@ Qed.
 Lemma wrap_unique_le {bl l} (H: unwrap_abstract l = Some bl) : le (wrap_abstract bl (unique_prov l)) l.
 Proof.
 destruct (unique_prov l) eqn:Huniq; cycle 1.
-{ apply int.lemma1; assumption. }
+{ apply unwrap_le; assumption. }
 
 assert (wrap_abstract bl (Some p) = l); cycle 1.
 { rewrite H0. apply (le_list_abstract_byte_refl l). }

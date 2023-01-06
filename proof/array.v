@@ -2,7 +2,7 @@ Require Import Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm utils wf.
-From Minirust.proof Require Import lemma low.
+From Minirust.lemma Require Import utils le.
 
 Section array.
 
