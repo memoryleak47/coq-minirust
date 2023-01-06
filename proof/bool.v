@@ -1,7 +1,8 @@
-Require Import defs encoding thm lemma.
-Require Import Coq.Init.Byte.
-Require Import List.
+Require Import Coq.Init.Byte List.
 Import ListNotations.
+
+From Minirust.def Require Import defs encoding thm.
+From Minirust.proof Require Import lemma.
 
 Inductive BoolCases1 : list AbstractByte -> Type :=
   | BC1True (p: option P) : BoolCases1 [Init x01 p]

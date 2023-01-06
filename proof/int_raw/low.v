@@ -1,12 +1,5 @@
-Require Import defs int_encoding.
-Require Import Coq.Init.Byte.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.EqdepFacts.
-Require Import List.
-Require Import Ndigits.
-Require Import ZArith.
-Require Import Zpow_facts.
-Require Import Lia.
+Require Import Coq.Init.Byte FunctionalExtensionality EqdepFacts List Ndigits ZArith Zpow_facts Lia.
+From Minirust.def Require Import defs int_encoding.
 
 Lemma vector_retype {T O: Type} {n: nat} (f: forall n, Vector.t T n -> O) (v: Vector.t T n) (m:nat) :
   forall (P: n=m), f n v = f m (eq_rect n (Vector.t T) v m P).

@@ -1,9 +1,8 @@
-Require Import defs encoding thm lemma wf int_encoding high low le.
-Require Import Coq.Init.Byte.
-Require Import List.
-Require Import ZArith.
-Require Import Lia.
+Require Import Coq.Init.Byte List ZArith Lia.
 Import ListNotations.
+
+From Minirust.def Require Import defs encoding thm wf int_encoding le.
+From Minirust.proof Require Import lemma low high.
 
 Lemma pow_pos (x: nat) : pow2 x > 0.
 Proof.

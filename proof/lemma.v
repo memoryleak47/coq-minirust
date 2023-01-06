@@ -1,9 +1,5 @@
-Require Import defs.
-Require Import le.
-Require Import Coq.Bool.Bool.
-Require Import Coq.Init.Datatypes.
-Require Import Coq.Init.Byte.
-Require Import Coq.Lists.List.
+From Minirust.def Require Import defs le.
+Require Import Datatypes Coq.Init.Byte List.
 Import ListNotations.
 
 Inductive LeAbstractByte : AbstractByte -> AbstractByte -> Type :=

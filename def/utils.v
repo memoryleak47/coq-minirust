@@ -1,8 +1,4 @@
-Require Import Bool.
-Require Import Datatypes.
-Require Import Coq.Init.Byte.
-Require Import ZArith.
-Require Import List.
+Require Import Bool Datatypes Coq.Init.Byte ZArith List.
 Import ListNotations.
 
 Definition opt_bind {aT rT : Type} (f: aT -> option rT) (o: option aT):  option rT :=

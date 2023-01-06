@@ -1,13 +1,7 @@
-Require Import Bool.
-Require Import Datatypes.
-Require Import Coq.Init.Byte.
-Require Import ZArith.
-Require Import List.
+Require Import Bool Datatypes Coq.Init.Byte ZArith List.
 Import ListNotations.
 
-Require Import defs.
-Require Import int_encoding.
-Require Import utils.
+From Minirust.def Require Import defs int_encoding utils.
 
 Definition Encoder := Ty -> Value -> option (list AbstractByte).
 Definition Decoder := Ty -> list AbstractByte -> option Value.

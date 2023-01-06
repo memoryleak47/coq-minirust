@@ -1,11 +1,8 @@
-Require Import defs encoding thm lemma utils wf low.
-Require Import Coq.Init.Byte.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import NArith.
-Require Import List.
+Require Import Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith.
 Import ListNotations.
-Require Import Ndigits.
-Require Import ZArith.
+
+From Minirust.def Require Import defs encoding thm utils wf.
+From Minirust.proof Require Import lemma low.
 
 Section array.
 

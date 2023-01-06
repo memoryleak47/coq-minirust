@@ -1,11 +1,6 @@
-Require Import defs int_encoding low.
-Require Import Coq.Init.Byte.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.EqdepFacts.
-Require Import List.
-Require Import Ndigits.
-Require Import ZArith.
-Require Import Lia.
+Require Import Coq.Init.Byte FunctionalExtensionality EqdepFacts List Ndigits ZArith Lia.
+From Minirust.def Require Import defs int_encoding.
+From Minirust.proof.int_raw Require Import low.
 
 (* TODO cleanup this file. There are a lot of things, that can be simplified using the basenum abstraction. *)
 

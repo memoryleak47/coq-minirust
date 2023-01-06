@@ -1,9 +1,7 @@
-Require Import defs.
-Require Import Coq.Bool.Bool.
-Require Import Coq.Init.Datatypes.
-Require Import Coq.Init.Byte.
-Require Import Coq.Lists.List.
+Require Import Datatypes List.
 Import ListNotations.
+
+From Minirust.def Require Import defs.
 
 Class DefinedRelation (T : Type) := {
   le : T -> T -> Prop

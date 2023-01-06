@@ -1,15 +1,7 @@
-Require Import Bool.
-Require Import Datatypes.
-Require Import Coq.Init.Byte.
-Require Import ZArith.
-Require Import List.
-Require Import Init.Nat.
-Require Import Lia.
-Require Import Ndigits.
+Require Import Bool Datatypes Coq.Init.Byte ZArith List Init.Nat Lia Ndigits.
 Import ListNotations.
 
-Require Import defs.
-Require Import utils.
+From Minirust.def Require Import defs utils.
 
 (* fundamentals *)
 
