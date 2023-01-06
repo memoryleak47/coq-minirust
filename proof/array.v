@@ -1,4 +1,4 @@
-Require Import defs encoding thm lemma utils wf.
+Require Import defs encoding thm lemma utils wf low.
 Require Import Coq.Init.Byte.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import NArith.
@@ -21,6 +21,10 @@ Qed.
 
 Lemma transpose_map {T1 T2 T3} {f: T1 -> option T2} {g: T2 -> option T3} {l: list T1} {l'} (H: transpose (map f l) = Some l') :
 map g l' = map (fun x => (f x) >>= g) l.
+Proof.
+Admitted.
+
+Lemma valid_array {vs} (H: is_valid_for t (VTuple vs)) : Forall (fun v => is_valid_for elem_ty v) vs.
 Proof.
 Admitted.
 
@@ -97,6 +101,8 @@ assert (transpose (map
  (fun x : Value => encode elem_ty x >>= decode elem_ty) vs) = Some vs); cycle 1.
 { rewrite H0. simpl. auto. }
 
+destruct (mk_var (valid_array Hval)) as [Hval' _]. clear Hval.
+
 generalize dependent l0.
 induction vs as [|v vs' IH].
 { admit. }
@@ -104,7 +110,7 @@ induction vs as [|v vs' IH].
 intros l0 Htransp.
 rewrite map_cons.
 
-assert (is_valid_for elem_ty v). { admit. }
+assert (is_valid_for elem_ty v). { inversion Hval'. assumption. }
 assert (Hwf': wf elem_ty). { admit. }
 
 destruct (encode elem_ty v) eqn:E; cycle 1. {
@@ -124,8 +130,7 @@ rewrite transpose_some.
 destruct l0.
 { (* discriminate within Htransp, left-side has length > 0, while right-side is []. *) admit. }
 
-(* TODO this doesn't hold! We just need a way to get is_valid_for elem_ty for all elements of vs. *)
-assert (is_valid_for t (VTuple vs')). { admit. }
+assert (Forall (fun v : Value => is_valid_for elem_ty v) vs'). { inversion Hval'. assumption. }
 
 rewrite (IH H1 l1).
 - simpl. auto.
