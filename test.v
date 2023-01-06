@@ -29,12 +29,20 @@ Lemma test_encode_int (A : Assumptions) :
 Proof. exec A. Qed.
 
 Lemma test_bool (A: Assumptions) :
+(* encode *)
 (encode TBool (VBool true) = Some [Init "001" None]) /\
 (encode TBool (VBool false) = Some [Init "000" None]) /\
 
+(* decode *)
 (decode TBool [Init "001" None]) = Some (VBool true) /\
 (decode TBool [Init "000" None]) = Some (VBool false) /\
+(decode TBool [Init "001" (Some (prov A 12))]) = Some (VBool true) /\
+(decode TBool [Init "000" (Some (prov A 42))]) = Some (VBool false) /\
 
-(decode TBool [Init "001" (Some (prov A 12))]) = Some (VBool true).
+(* error *)
+(encode TBool (VInt 12%Z)) = None /\
+(decode TBool [Init "002" None]) = None /\
+(decode TBool []) = None /\
+(decode TBool [Init "001" None; Init "001" None]) = None /\
+(decode TBool [Uninit]) = None.
 Proof. exec A. Qed.
-
