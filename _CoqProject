@@ -10,7 +10,8 @@ def/wf.v
 
 lemma/vector.v
 lemma/utils.v
-lemma/prov.v
+lemma/unique_prov.v
+lemma/wrap_abstract.v
 lemma/le.v
 
 proof/int_raw/low.v

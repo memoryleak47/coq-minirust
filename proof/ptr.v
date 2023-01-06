@@ -2,7 +2,7 @@ Require Import Coq.Init.Byte List ZArith Lia.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm wf int_encoding le utils.
-From Minirust.lemma Require Import prov le.
+From Minirust.lemma Require Import unique_prov wrap_abstract le.
 From Minirust.proof Require Import high int.
 
 Section ptr.
