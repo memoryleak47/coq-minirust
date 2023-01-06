@@ -45,6 +45,7 @@ Definition assuming {T: Type} (f: T -> bool) (t: T)  :=
 Definition assuming_const {T: Type} (b: bool) (t: T)  :=
   if b then Some t else None.
 
+(* TODO better `chunks` definition *)
 Fixpoint chunks_impl {T: Type} (tmp: list T) (chunk_size: nat) (l: list T) : list (list T) :=
   match (chunk_size =? length tmp,l) with
   | (_,[]) => [tmp]
@@ -52,4 +53,5 @@ Fixpoint chunks_impl {T: Type} (tmp: list T) (chunk_size: nat) (l: list T) : lis
   | (false,x::l') => chunks_impl (tmp ++ [x]) chunk_size l'
   end.
 
-Definition chunks {T: Type} (l: list T) (chunk_size: nat) := chunks_impl [] chunk_size l.
+Definition chunks {T: Type} (l: list T) (chunk_size: nat) :=
+if length l =? 0 then [] else chunks_impl [] chunk_size l.

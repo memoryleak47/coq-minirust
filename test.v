@@ -60,5 +60,8 @@ Proof. exec A. Qed.
 
 Lemma test_array (A: Assumptions) :
 encode (TArray (TInt 2 Unsigned) 2%Z) (VTuple [VInt 12%Z; VInt 13%Z]) = Some [Init "000" None; Init "012" None; Init "000" None; Init "013" None]  /\
-decode (TArray (TInt 2 Unsigned) 2%Z) [Init "000" None; Init "012" None; Init "000" None; Init "013" None] = Some (VTuple [VInt 12%Z; VInt 13%Z]).
+decode (TArray (TInt 2 Unsigned) 2%Z) [Init "000" None; Init "012" None; Init "000" None; Init "013" None] = Some (VTuple [VInt 12%Z; VInt 13%Z]) /\
+
+encode (TArray TBool 0%Z) (VTuple []) = Some [] /\
+decode (TArray TBool 0%Z) [] = Some (VTuple []).
 Proof. exec A. Qed.
