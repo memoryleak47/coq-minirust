@@ -77,14 +77,14 @@ Qed.
 Lemma ptr_mono1 : mono1 t.
 Proof.
 intros Hwf v1 v2 Hle Hv1 Hv2.
-assert (exists a b, VPtr a b = v1). {
-  destruct Hv1 as [l H].
-  destruct (ptr_dec H) as [addr [Hv [lb [Henc [Hdec HConstr]]]]].
-  exists addr, (unique_prov l).
+assert (exists a b l, VPtr a b = v1 /\ encode_int_raw PTR_SIZE Unsigned a = Some l). {
+  destruct Hv1 as [la H].
+  destruct (ptr_dec H) as [addr [Hv [l [Henc [Hdec HConstr]]]]].
+  exists addr, (unique_prov la), l.
   auto.
 }
 destruct H as [addr].
-destruct H as [p Hv].
+destruct H as [p [l [Hv Henc]]].
 rewrite <- Hv.
 rewrite <- Hv in Hle,Hv1. clear v1 Hv.
 assert (exists b, VPtr addr b = v2). {
@@ -98,40 +98,12 @@ assert (exists b, VPtr addr b = v2). {
 destruct H as [p' Hrew].
 rewrite <- Hrew. rewrite <- Hrew in Hle,Hv2. clear Hrew v2.
 unfold encode,encode_ptr.
-(* TODO extract to lemma *)
-assert (exists l, encode_int_raw PTR_SIZE Unsigned addr = Some l). {
-  destruct (encode_int_raw PTR_SIZE Unsigned addr) eqn:E. { exists l. reflexivity. }
-  exfalso.
-  destruct Hv1 as [l Hdec].
-  unfold decode,decode_ptr in Hdec.
-  destruct (unwrap_abstract l) eqn:F; cycle 1.
-  { simpl in Hdec. discriminate Hdec. }
-  simpl in Hdec.
-  destruct (decode_int_raw PTR_SIZE Unsigned l0) eqn:G; cycle 1.
-  { simpl in Hdec. discriminate Hdec. }
-  simpl in Hdec. unfold utils.assuming in Hdec.
-  destruct (Constraints i align) eqn:H; cycle 1.
-  { simpl in Hdec. discriminate Hdec. }
-  simpl in Hdec.
-  inversion Hdec.
-  destruct (Nat.eq_dec (length l0) PTR_SIZE); cycle 1.
-  -- assert (decode_int_raw PTR_SIZE Unsigned l0 = None).
-     { apply (decode_int_none n). }
-     rewrite G in H0. discriminate H0.
-  -- destruct (rt2_int PTR_SIZE Unsigned _ e).
-     { apply ptr_size_gt0. }
-     inversion H0. inversion H4.
-     rewrite G in H3. inversion H3.
-     rewrite H1 in H8.
-     rewrite H8 in H5.
-     rewrite H5 in E. discriminate E.
-}
-destruct H as [l H].
-rewrite H.
+
+rewrite Henc.
 exists (wrap_abstract l p), (wrap_abstract l p').
 split; try auto.
 split; try auto.
-clear H.
+clear Henc.
 
 induction l as [|b l IH].
 { simpl. trivial. }
