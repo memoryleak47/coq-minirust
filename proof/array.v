@@ -3,7 +3,7 @@ Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm utils wf.
 From Minirust.proof Require Import defs.
-From Minirust.proof.lemma Require Import le utils canonicalize.
+From Minirust.proof.lemma Require Import le utils canonicalize chunks.
 
 Section array.
 
@@ -15,6 +15,10 @@ Context (elem_props : Props elem_ty).
 Notation t := (TArray elem_ty count).
 
 Lemma elem_ty_wf : wf elem_ty.
+Proof.
+Admitted.
+
+Lemma non_neg_count : (count >= 0)%Z.
 Proof.
 Admitted.
 
@@ -59,8 +63,20 @@ unfold encode_array.
 simpl.
 
 unfold assuming.
-destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1.
-{ admit. }
+destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
+  assert (Z.of_nat (length tr_v) = count)%Z; cycle 1. { lia. }
+  assert (length l = ty_size elem_ty * Z.to_nat count). { lia. }
+  have Hcl (chunks_len H).
+  declare m Hm (map (decode elem_ty) (chunks l (ty_size elem_ty))).
+  rewrite Hm in Htr.
+  assert (length m = Z.to_nat count).
+  { rewrite <- Hm. rewrite map_length. auto. }
+  rewrite <- (transpose_len Htr).
+  rewrite H0.
+  rewrite Z2Nat.id. { auto. }
+  assert (count >= 0)%Z. { apply non_neg_count. }
+  lia.
+}
 
 simpl.
 

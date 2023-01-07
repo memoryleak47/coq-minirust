@@ -43,3 +43,21 @@ Qed.
 
 Lemma transpose_some {T} {x: T} {l: list (option T)} : transpose ((Some x) :: l) = (transpose l o-> (fun a => x :: a)).
 Admitted.
+
+Lemma transpose_len {T r} {l: list (option T)} (H: transpose l = Some r) :
+  length l = length r.
+Proof.
+generalize dependent r.
+induction l.
+{ intros r X. inversion X. auto. }
+
+intros r X.
+simpl.
+destruct r.
+{ destruct a; inversion X; destruct (transpose l); simpl in H0; discriminate H0. }
+simpl.
+f_equal.
+apply IHl.
+inversion X.
+destruct a; destruct (transpose l); inversion H0; auto.
+Qed.
