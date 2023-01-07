@@ -1,4 +1,4 @@
-Require Import Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith.
+Require Import Lia Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm utils wf.
@@ -12,11 +12,30 @@ Context (count: Int).
 Notation t := (TArray elem_ty count).
 
 Lemma array_dec {l v} (Hdec: decode t l = Some v) :
-exists vs, v = VTuple vs /\ Z.of_nat (length vs) = count.
+exists vs, v = VTuple vs
+/\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
+/\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs.
 Proof.
 unfold decode in Hdec. fold decode in Hdec.
 unfold decode_array in Hdec.
-Admitted.
+match goal with
+| _ : ((?tr_ >>= assuming_const ?a_) o-> VTuple) = Some v |- _ => declare tr Htr tr_; declare a Ha a_
+end.
+rewrite Htr,Ha in Hdec.
+destruct tr as [tr_v|] eqn:Htr_v; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+simpl in Hdec.
+destruct a as [|] eqn:Ha_v; cycle 1.
+{ simpl in Hdec. discriminate Hdec. }
+
+simpl in Hdec.
+inversion Hdec as [Hv].
+exists tr_v.
+split. { auto. }
+split. { lia. }
+assumption.
+Qed.
 
 Lemma encode_len {v ty l} (H: encode t v = Some l) : length l = ty_size ty.
 Proof.
