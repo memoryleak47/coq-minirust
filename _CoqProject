@@ -10,13 +10,13 @@ def/wf.v
 
 test.v
 
-proofdefs.v
+proof/defs.v
 
-lemma/vector.v
-lemma/utils.v
-lemma/unique_prov.v
-lemma/wrap_abstract.v
-lemma/le.v
+proof/lemma/vector.v
+proof/lemma/utils.v
+proof/lemma/unique_prov.v
+proof/lemma/wrap_abstract.v
+proof/lemma/le.v
 
 proof/int_raw/low.v
 proof/int_raw/mid.v

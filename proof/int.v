@@ -2,9 +2,8 @@ Require Import Coq.Init.Byte List ZArith Lia.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm wf int_encoding le.
-From Minirust.lemma Require Import unique_prov wrap_abstract utils le.
-From Minirust.proof Require Import high.
-From Minirust Require Import proofdefs.
+From Minirust.proof.lemma Require Import unique_prov wrap_abstract utils le.
+From Minirust.proof Require Import defs high.
 
 Lemma pow_pos (x: nat) : pow2 x > 0.
 Proof.

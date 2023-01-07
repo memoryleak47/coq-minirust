@@ -1,7 +1,7 @@
 Require Import Lia List.
 Import ListNotations.
 From Minirust.def Require Import defs encoding le.
-From Minirust.lemma Require Import le.
+From Minirust.proof.lemma Require Import le.
 
 Lemma unwrap_le bl l :
   unwrap_abstract l = Some bl ->
