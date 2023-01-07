@@ -26,7 +26,7 @@ destruct tr as [tr_v|] eqn:Htr_v; cycle 1.
 { simpl in Hdec. discriminate Hdec. }
 
 simpl in Hdec.
-destruct a as [|] eqn:Ha_v; cycle 1.
+destruct a eqn:Ha_v; cycle 1.
 { simpl in Hdec. discriminate Hdec. }
 
 simpl in Hdec.
@@ -50,7 +50,23 @@ Lemma array_rt1 : rt1 t.
 Proof.
 intros Hwf v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hdec) as [vs [-> Hcnt]].
+destruct (array_dec Hdec) as [vs [-> [Hcnt Hvs]]].
+
+assert (Z.of_nat (length vs) = count)%Z as Hvsc. {
+  (* we know the length of l using Hcnt,
+     and hence we know the length of vs using Hvs. *)
+  admit.
+}
+
+declare e He (encode t (VTuple vs)).
+(* He' is a copy of He, useful later as He will be destructed to pieces *)
+have He' He.
+unfold encode in He. fold encode in He.
+unfold encode_array in He. simpl in He.
+rewrite <- Hvsc in He. simpl in He.
+unfold assuming in He.
+rewrite Z.eqb_refl in He. simpl in He.
+rewrite (transpose_map Hvs) in He.
 Admitted.
 
 Lemma array_rt2 : rt2 t.
