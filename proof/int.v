@@ -4,6 +4,7 @@ Import ListNotations.
 From Minirust.def Require Import defs encoding thm wf int_encoding le.
 From Minirust.lemma Require Import unique_prov wrap_abstract utils le.
 From Minirust.proof Require Import high.
+From Minirust Require Import proofdefs.
 
 Lemma pow_pos (x: nat) : pow2 x > 0.
 Proof.
@@ -225,4 +226,13 @@ split.
   reflexivity.
 - apply unwrap_le.
   assumption.
+Qed.
+
+Lemma int_props {size: Size} {signedness: Signedness} : Props (TInt size signedness).
+Proof.
+split.
+- apply int_rt1.
+- apply int_rt2.
+- apply int_mono1.
+- apply int_mono2.
 Qed.

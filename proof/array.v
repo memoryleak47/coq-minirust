@@ -1,20 +1,25 @@
-Require Import Lia Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith.
+Require Import Lia Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith ssrbool.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm utils wf.
 From Minirust.lemma Require Import utils le.
+From Minirust Require Import proofdefs.
 
 Section array.
 
-Context (elem_ty: Ty).
-Context (count: Int).
+Context {elem_ty: Ty}.
+Context {count: Int}.
+
+Context (elem_props : Props elem_ty).
 
 Notation t := (TArray elem_ty count).
 
+(* this already proves that the resulting value `v` can be encoded again *)
 Lemma array_dec {l v} (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
 /\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
-/\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs.
+/\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs
+/\ isSome (encode t v). (* TODO add all relevant things about this encode result *)
 Proof.
 unfold decode in Hdec. fold decode in Hdec.
 unfold decode_array in Hdec.
@@ -34,8 +39,8 @@ inversion Hdec as [Hv].
 exists tr_v.
 split. { auto. }
 split. { lia. }
-assumption.
-Qed.
+split. { assumption. }
+Admitted.
 
 Lemma encode_len {v ty l} (H: encode t v = Some l) : length l = ty_size ty.
 Proof.
@@ -50,7 +55,7 @@ Lemma array_rt1 : rt1 t.
 Proof.
 intros Hwf v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hdec) as [vs [-> [Hcnt Hvs]]].
+destruct (array_dec Hdec) as [vs [-> [Hcnt [Hvs _]]]].
 
 assert (Z.of_nat (length vs) = count)%Z as Hvsc. {
   (* we know the length of l using Hcnt,
@@ -70,6 +75,7 @@ rewrite (transpose_map Hvs) in He.
 Admitted.
 
 Lemma array_rt2 : rt2 t.
+intros Hwf l v Hdec.
 Proof.
 Admitted.
 
@@ -80,5 +86,14 @@ Admitted.
 Lemma array_mono2 : mono2 t.
 Proof.
 Admitted.
+
+Lemma array_props : Props t.
+Proof.
+split.
+- apply array_rt1.
+- apply array_rt2.
+- apply array_mono1.
+- apply array_mono2.
+Qed.
 
 End array.

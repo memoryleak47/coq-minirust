@@ -4,6 +4,7 @@ Import ListNotations.
 From Minirust.def Require Import defs encoding thm wf int_encoding le utils.
 From Minirust.lemma Require Import unique_prov wrap_abstract le utils.
 From Minirust.proof Require Import high int.
+From Minirust Require Import proofdefs.
 
 Section ptr.
 
@@ -199,5 +200,13 @@ split.
 apply wrap_unique_le; assumption.
 Qed.
 
+Lemma ptr_props : Props t.
+Proof.
+split.
+- apply ptr_rt1.
+- apply ptr_rt2.
+- apply ptr_mono1.
+- apply ptr_mono2.
+Qed.
 
 End ptr.

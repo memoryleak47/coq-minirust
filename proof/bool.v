@@ -2,6 +2,7 @@ Require Import Coq.Init.Byte List.
 Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm.
+From Minirust Require Import proofdefs.
 From Minirust.lemma Require Import le.
 
 Inductive BoolCases1 : list AbstractByte -> Type :=
@@ -96,4 +97,13 @@ destruct (mk_bool_cases1 l).
 - inversion H. clear v H H1.
   exists [Init x00 None]. simpl. split; reflexivity || auto.
 - rewrite H in H0. discriminate H0.
+Qed.
+
+Lemma bool_props : Props TBool.
+Proof.
+split.
+- apply bool_rt1.
+- apply bool_rt2.
+- apply bool_mono1.
+- apply bool_mono2.
 Qed.

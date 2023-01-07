@@ -10,6 +10,8 @@ def/wf.v
 
 test.v
 
+proofdefs.v
+
 lemma/vector.v
 lemma/utils.v
 lemma/unique_prov.v
