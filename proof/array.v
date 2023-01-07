@@ -14,12 +14,73 @@ Context (elem_props : Props elem_ty).
 
 Notation t := (TArray elem_ty count).
 
+Lemma elem_ty_wf : wf elem_ty.
+Proof.
+Admitted.
+
+Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size elem_ty.
+Proof.
+Admitted.
+
+Lemma chunks_concat {T} {s} {l : list (list T)} (H: Forall (fun x => length x = s) l) :
+  utils.chunks (concat l) s = l.
+Proof.
+Admitted.
+
+
+Lemma canonicalize_lemma1 {l: list AbstractByte} (H: exists v, decode elem_ty l = Some v) :
+  exists l', canonicalize elem_ty l = Some l'.
+Proof.
+destruct H as [v H].
+assert (Hval: is_valid_for elem_ty v).
+{ exists l. auto. }
+
+destruct (PR_RT1 elem_ty elem_props elem_ty_wf v Hval) as [l' [Henc Hdec]].
+unfold canonicalize.
+rewrite H.
+simpl.
+exists l'.
+assumption.
+Qed.
+
+Lemma canonicalize_lemma2 {ls vs} (H: transpose (map (decode elem_ty) ls) = Some vs) :
+  exists ll, transpose (map (canonicalize elem_ty) ls) = Some ll.
+Proof.
+generalize dependent vs.
+induction ls as [|x ll IH].
+{ intros vs X. simpl in X. inversion X. exists []. auto. }
+
+intros vs X.
+simpl.
+destruct (decode elem_ty x) as [v|] eqn:Hdec; cycle 1.
+{ simpl in X. rewrite Hdec in X. simpl in X. discriminate X. }
+
+assert (Hv: exists v, decode elem_ty x = Some v).
+{ exists v. auto. }
+
+destruct (canonicalize_lemma1 Hv) as [x' Hx'].
+rewrite Hx'.
+
+simpl in X.
+rewrite Hdec in X.
+
+
+destruct (transpose (map (decode elem_ty) ll)) eqn:E; cycle 1.
+{ simpl in X. discriminate X. }
+
+destruct (IH l eq_refl).
+rewrite H.
+simpl.
+exists (x' :: x0).
+auto.
+Qed.
+
 (* this already proves that the resulting value `v` can be encoded again *)
 Lemma array_dec {l v} (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
 /\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
 /\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs
-/\ isSome (encode t v). (* TODO add all relevant things about this encode result *)
+/\ exists l', encode t v = Some l'. (* TODO add all relevant things about this encode result *)
 Proof.
 unfold decode in Hdec. fold decode in Hdec.
 unfold decode_array in Hdec.
@@ -40,15 +101,46 @@ exists tr_v.
 split. { auto. }
 split. { lia. }
 split. { assumption. }
-Admitted.
 
-Lemma encode_len {v ty l} (H: encode t v = Some l) : length l = ty_size ty.
-Proof.
-Admitted.
+unfold encode. fold encode.
+unfold encode_array.
+simpl.
 
-Lemma chunks_concat {T} {s} {l : list (list T)} (H: Forall (fun x => length x = s) l) :
-  utils.chunks (concat l) s = l.
-Proof.
+unfold assuming.
+destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1.
+{ admit. }
+
+simpl.
+
+match goal with
+| |- exists l', transpose (map ?f_ tr_v) o-> _ = Some l' => declare f Hf f_
+end.
+rewrite Hf.
+
+assert (Hf': f = encode elem_ty). {
+  apply functional_extensionality_dep.
+  intros x.
+  rewrite <- Hf.
+  destruct (encode elem_ty x) eqn:Hx; cycle 1.
+  { simpl. auto. }
+
+  simpl.
+  rewrite (encode_elem_len Hx).
+  rewrite Nat.eqb_refl.
+  auto.
+}
+rewrite Hf'.
+clear f Hf Hf'.
+
+rewrite (transpose_map Htr).
+replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_ty); cycle 1.
+{ unfold canonicalize. auto. }
+
+destruct (canonicalize_lemma2 Htr) as [ll Hll].
+rewrite Hll.
+simpl.
+exists (concat ll).
+auto.
 Admitted.
 
 Lemma array_rt1 : rt1 t.
