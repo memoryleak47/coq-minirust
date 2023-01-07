@@ -1,6 +1,6 @@
 -R . Minirust
 
-def/defs.v
+def/ty.v
 def/le.v
 def/thm.v
 def/encoding.v

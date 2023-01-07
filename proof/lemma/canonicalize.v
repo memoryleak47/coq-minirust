@@ -1,7 +1,7 @@
 Require Import Lia Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith ssrbool.
 Import ListNotations.
 
-From Minirust.def Require Import defs encoding thm utils wf.
+From Minirust.def Require Import ty encoding thm utils wf.
 From Minirust.proof Require Import defs.
 From Minirust.proof.lemma Require Import utils.
 

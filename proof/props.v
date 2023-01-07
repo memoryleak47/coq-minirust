@@ -1,4 +1,4 @@
-From Minirust.def Require Import defs encoding thm.
+From Minirust.def Require Import ty encoding thm.
 From Minirust.proof Require Import defs int bool ptr array.
 Require Import List.
 Import ListNotations.

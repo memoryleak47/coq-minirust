@@ -1,7 +1,7 @@
 Require Import Datatypes List.
 Import ListNotations.
 
-From Minirust.def Require Import defs.
+From Minirust.def Require Import ty.
 
 Class DefinedRelation (T : Type) := {
   le : T -> T -> Prop

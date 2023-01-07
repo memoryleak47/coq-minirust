@@ -1,4 +1,4 @@
-From Minirust.def Require Import defs encoding le wf.
+From Minirust.def Require Import ty encoding le wf.
 
 Definition mono1 (ty: Ty) :=
   wf ty

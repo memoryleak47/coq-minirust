@@ -1,5 +1,5 @@
 Require Import Coq.Init.Byte FunctionalExtensionality EqdepFacts List Ndigits ZArith Zpow_facts Lia.
-From Minirust.def Require Import defs int_encoding.
+From Minirust.def Require Import ty int_encoding.
 From Minirust.proof.lemma Require Import vector utils.
 
 Lemma ascii_rt1 (l: list Ascii.ascii): (map Ascii.ascii_of_byte (map Ascii.byte_of_ascii l)) = l.

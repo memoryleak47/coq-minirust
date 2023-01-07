@@ -1,6 +1,6 @@
 Require Import Lia List.
 Import ListNotations.
-From Minirust.def Require Import defs encoding le.
+From Minirust.def Require Import ty encoding le.
 From Minirust.proof.lemma Require Import le wrap_abstract.
 
 Lemma unique_prov_cons2 {a} {b} {l} {p} (H: unique_prov (a :: b :: l) = Some p) :

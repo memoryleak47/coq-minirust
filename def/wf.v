@@ -1,7 +1,7 @@
 Require Import ZArith List.
 Import ListNotations.
 
-From Minirust.def Require Import defs int_encoding.
+From Minirust.def Require Import ty int_encoding.
 
 Definition valid_size (size: Size) : Prop := (int_in_range (Z.of_nat size) PTR_SIZE Signed) = true.
 

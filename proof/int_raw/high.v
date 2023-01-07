@@ -1,5 +1,5 @@
 Require Import Coq.Init.Byte FunctionalExtensionality EqdepFacts List Ndigits ZArith Lia.
-From Minirust.def Require Import defs int_encoding.
+From Minirust.def Require Import ty int_encoding.
 From Minirust.proof.int_raw Require Import mid.
 
 (* roundtrip properties *)

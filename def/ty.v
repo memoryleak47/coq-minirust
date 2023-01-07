@@ -1,8 +1,6 @@
 Require Import Datatypes Coq.Init.Byte ZArith List.
 Import ListNotations.
 
-(* provenance *)
-
 Inductive Endianness :=
  | LittleEndian
  | BigEndian.
@@ -15,6 +13,7 @@ Definition Align := nat.
 Context `{ENDIANNESS_impl : Endianness}.
 Definition ENDIANNESS := ENDIANNESS_impl.
 
+(* provenance *)
 Context `{P_impl : Type}.
 Definition P := P_impl.
 

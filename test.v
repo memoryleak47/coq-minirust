@@ -1,4 +1,4 @@
-From Minirust.def Require Import defs encoding int_encoding utils.
+From Minirust.def Require Import ty encoding int_encoding utils.
 Require Import Coq.Init.Byte List NArith ZArith.
 Import ListNotations.
 

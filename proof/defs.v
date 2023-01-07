@@ -1,4 +1,4 @@
-From Minirust.def Require Import defs encoding utils thm.
+From Minirust.def Require Import ty encoding utils thm.
 
 Definition canonicalize ty l := decode ty l >>= encode ty.
 

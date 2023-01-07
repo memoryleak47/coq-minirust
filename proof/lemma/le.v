@@ -1,4 +1,4 @@
-From Minirust.def Require Import defs le.
+From Minirust.def Require Import ty le.
 Require Import Datatypes Coq.Init.Byte List.
 Import ListNotations.
 

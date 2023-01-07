@@ -1,7 +1,7 @@
 Require Import Coq.Init.Byte List.
 Import ListNotations.
 
-From Minirust.def Require Import defs encoding thm.
+From Minirust.def Require Import ty encoding thm.
 From Minirust.proof Require Import defs lemma.le.
 
 Inductive BoolCases1 : list AbstractByte -> Type :=
