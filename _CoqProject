@@ -14,9 +14,10 @@ proof/defs.v
 
 proof/lemma/vector.v
 proof/lemma/utils.v
+proof/lemma/le.v
 proof/lemma/unique_prov.v
 proof/lemma/wrap_abstract.v
-proof/lemma/le.v
+proof/lemma/canonicalize.v
 
 proof/int_raw/low.v
 proof/int_raw/mid.v

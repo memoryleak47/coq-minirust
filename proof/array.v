@@ -3,7 +3,7 @@ Import ListNotations.
 
 From Minirust.def Require Import defs encoding thm utils wf.
 From Minirust.proof Require Import defs.
-From Minirust.proof.lemma Require Import le utils.
+From Minirust.proof.lemma Require Import le utils canonicalize.
 
 Section array.
 
@@ -26,54 +26,6 @@ Lemma chunks_concat {T} {s} {l : list (list T)} (H: Forall (fun x => length x = 
   utils.chunks (concat l) s = l.
 Proof.
 Admitted.
-
-
-Lemma canonicalize_lemma1 {l: list AbstractByte} (H: exists v, decode elem_ty l = Some v) :
-  exists l', canonicalize elem_ty l = Some l'.
-Proof.
-destruct H as [v H].
-assert (Hval: is_valid_for elem_ty v).
-{ exists l. auto. }
-
-destruct (PR_RT1 elem_ty elem_props elem_ty_wf v Hval) as [l' [Henc Hdec]].
-unfold canonicalize.
-rewrite H.
-simpl.
-exists l'.
-assumption.
-Qed.
-
-Lemma canonicalize_lemma2 {ls vs} (H: transpose (map (decode elem_ty) ls) = Some vs) :
-  exists ll, transpose (map (canonicalize elem_ty) ls) = Some ll.
-Proof.
-generalize dependent vs.
-induction ls as [|x ll IH].
-{ intros vs X. simpl in X. inversion X. exists []. auto. }
-
-intros vs X.
-simpl.
-destruct (decode elem_ty x) as [v|] eqn:Hdec; cycle 1.
-{ simpl in X. rewrite Hdec in X. simpl in X. discriminate X. }
-
-assert (Hv: exists v, decode elem_ty x = Some v).
-{ exists v. auto. }
-
-destruct (canonicalize_lemma1 Hv) as [x' Hx'].
-rewrite Hx'.
-
-simpl in X.
-rewrite Hdec in X.
-
-
-destruct (transpose (map (decode elem_ty) ll)) eqn:E; cycle 1.
-{ simpl in X. discriminate X. }
-
-destruct (IH l eq_refl).
-rewrite H.
-simpl.
-exists (x' :: x0).
-auto.
-Qed.
 
 (* this already proves that the resulting value `v` can be encoded again *)
 Lemma array_dec {l v} (Hdec: decode t l = Some v) :
@@ -136,7 +88,7 @@ rewrite (transpose_map Htr).
 replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_ty); cycle 1.
 { unfold canonicalize. auto. }
 
-destruct (canonicalize_lemma2 Htr) as [ll Hll].
+destruct (canonicalize_lemma2 elem_ty elem_props elem_ty_wf Htr) as [ll Hll].
 rewrite Hll.
 simpl.
 exists (concat ll).
