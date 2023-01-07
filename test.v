@@ -59,9 +59,15 @@ Lemma test_bool (A: Assumptions) :
 Proof. exec A. Qed.
 
 Lemma test_array (A: Assumptions) :
+(* encode *)
 encode (TArray (TInt 2 Unsigned) 2%Z) (VTuple [VInt 12%Z; VInt 13%Z]) = Some [Init "000" None; Init "012" None; Init "000" None; Init "013" None]  /\
 decode (TArray (TInt 2 Unsigned) 2%Z) [Init "000" None; Init "012" None; Init "000" None; Init "013" None] = Some (VTuple [VInt 12%Z; VInt 13%Z]) /\
 
+(* decode *)
 encode (TArray TBool 0%Z) (VTuple []) = Some [] /\
-decode (TArray TBool 0%Z) [] = Some (VTuple []).
+decode (TArray TBool 0%Z) [] = Some (VTuple []) /\
+
+(* error *)
+encode (TArray TBool 1%Z) (VTuple []) = None /\
+decode (TArray TBool 1%Z) [] = None.
 Proof. exec A. Qed.

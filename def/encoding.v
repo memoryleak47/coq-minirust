@@ -127,10 +127,12 @@ Definition mk_uninit (size: Size) := map (fun _ => Uninit) (seq 0 size).
 
 Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecoder: Decoder) : option Value :=
   let elem_size := ty_size elem in
+  let full_size := (Z.of_nat elem_size * count)%Z in
   let c := chunks l elem_size in
   let dec := subdecoder elem in
-  let opt := transpose (map dec c) in
-  opt o-> VTuple.
+  transpose (map dec c)
+  >>= assuming_const (Z.of_nat (length l) =? full_size)%Z
+  o-> VTuple.
 
 (* tuples *)
 Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
