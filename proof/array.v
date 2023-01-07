@@ -14,13 +14,11 @@ Context (elem_props : Props elem_ty).
 
 Notation t := (TArray elem_ty count).
 
-Lemma elem_ty_wf : wf elem_ty.
-Proof.
-Admitted.
+Lemma elem_ty_wf (Hwf: wf t): wf elem_ty.
+Proof. inversion Hwf. inversion H0. auto. Qed.
 
-Lemma non_neg_count : (count >= 0)%Z.
-Proof.
-Admitted.
+Lemma non_neg_count (Hwf: wf t) : (count >= 0)%Z.
+Proof. inversion Hwf. inversion H0. auto. Qed.
 
 Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size elem_ty.
 Proof.
@@ -32,7 +30,7 @@ Proof.
 Admitted.
 
 (* this already proves that the resulting value `v` can be encoded again *)
-Lemma array_dec {l v} (Hdec: decode t l = Some v) :
+Lemma array_dec {l v} (Hwf: wf t) (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
 /\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
 /\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs
@@ -74,7 +72,7 @@ destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   rewrite <- (transpose_len Htr).
   rewrite H0.
   rewrite Z2Nat.id. { auto. }
-  assert (count >= 0)%Z. { apply non_neg_count. }
+  assert (count >= 0)%Z. { apply (non_neg_count Hwf). }
   lia.
 }
 
@@ -104,18 +102,18 @@ rewrite (transpose_map Htr).
 replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_ty); cycle 1.
 { unfold canonicalize. auto. }
 
-destruct (canonicalize_lemma2 elem_ty elem_props elem_ty_wf Htr) as [ll Hll].
+destruct (canonicalize_lemma2 elem_ty elem_props (elem_ty_wf Hwf) Htr) as [ll Hll].
 rewrite Hll.
 simpl.
 exists (concat ll).
 auto.
-Admitted.
+Qed.
 
 Lemma array_rt1 : rt1 t.
 Proof.
 intros Hwf v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hdec) as [vs [-> [Hcnt [Hvs _]]]].
+destruct (array_dec Hwf Hdec) as [vs [-> [Hcnt [Hvs _]]]].
 
 assert (Z.of_nat (length vs) = count)%Z as Hvsc. {
   (* we know the length of l using Hcnt,
