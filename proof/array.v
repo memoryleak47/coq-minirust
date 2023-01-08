@@ -24,6 +24,24 @@ Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size 
 Proof.
 Admitted.
 
+Lemma encode_elim_len_check :
+  (fun x => encode elem_ty x >>=
+  (fun t : list AbstractByte =>
+    if length t =? ty_size elem_ty
+    then Some t
+    else None)) = encode elem_ty.
+Proof.
+  apply functional_extensionality_dep.
+  intros x.
+  destruct (encode elem_ty x) eqn:Hx; cycle 1.
+  { simpl. auto. }
+
+  simpl.
+  rewrite (encode_elem_len Hx).
+  rewrite Nat.eqb_refl.
+  auto.
+Qed.
+
 Lemma chunks_concat {T} {s} {l : list (list T)} (H: Forall (fun x => length x = s) l) :
   utils.chunks (concat l) s = l.
 Proof.
@@ -34,7 +52,9 @@ Lemma array_dec {l v} (Hwf: wf t) (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
 /\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
 /\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs
-/\ exists l', encode t v = Some l'. (* TODO add all relevant things about this encode result *)
+/\ (Z.of_nat (length vs) = count)%Z
+/\ exists ll, transpose (map (encode elem_ty) vs) = Some ll
+/\ encode t v = Some (concat ll).
 Proof.
 unfold decode in Hdec. fold decode in Hdec.
 unfold decode_array in Hdec.
@@ -56,6 +76,7 @@ split. { auto. }
 split. { lia. }
 split. { assumption. }
 
+(* from here on we prove `exists l', encode t v = Some l'` and related properties *)
 unfold encode. fold encode.
 unfold encode_array.
 simpl.
@@ -75,28 +96,11 @@ destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   assert (count >= 0)%Z. { apply (non_neg_count Hwf). }
   lia.
 }
+split. { lia. }
 
 simpl.
 
-match goal with
-| |- exists l', transpose (map ?f_ tr_v) o-> _ = Some l' => declare f Hf f_
-end.
-rewrite Hf.
-
-assert (Hf': f = encode elem_ty). {
-  apply functional_extensionality_dep.
-  intros x.
-  rewrite <- Hf.
-  destruct (encode elem_ty x) eqn:Hx; cycle 1.
-  { simpl. auto. }
-
-  simpl.
-  rewrite (encode_elem_len Hx).
-  rewrite Nat.eqb_refl.
-  auto.
-}
-rewrite Hf'.
-clear f Hf Hf'.
+rewrite encode_elim_len_check.
 
 rewrite (transpose_map Htr).
 replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_ty); cycle 1.
@@ -105,31 +109,21 @@ replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_t
 destruct (canonicalize_lemma2 elem_ty elem_props (elem_ty_wf Hwf) Htr) as [ll Hll].
 rewrite Hll.
 simpl.
-exists (concat ll).
-auto.
+exists ll.
+split; auto.
 Qed.
 
 Lemma array_rt1 : rt1 t.
 Proof.
 intros Hwf v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hwf Hdec) as [vs [-> [Hcnt [Hvs _]]]].
+destruct (array_dec Hwf Hdec) as (vs & -> & Hcnt & Hvs & l' & ll & Htr & Henc).
+exists (concat ll).
+split. { assumption. }
 
-assert (Z.of_nat (length vs) = count)%Z as Hvsc. {
-  (* we know the length of l using Hcnt,
-     and hence we know the length of vs using Hvs. *)
-  admit.
-}
+unfold decode. fold decode.
+unfold decode_array.
 
-declare e He (encode t (VTuple vs)).
-(* He' is a copy of He, useful later as He will be destructed to pieces *)
-have He' He.
-unfold encode in He. fold encode in He.
-unfold encode_array in He. simpl in He.
-rewrite <- Hvsc in He. simpl in He.
-unfold assuming in He.
-rewrite Z.eqb_refl in He. simpl in He.
-rewrite (transpose_map Hvs) in He.
 Admitted.
 
 Lemma array_rt2 : rt2 t.
