@@ -24,6 +24,15 @@ Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size 
 Proof.
 Admitted.
 
+(* TODO B is redundant, this can be simplified.
+ canonicalize always returns list of length ty_size elem_ty *)
+Lemma canon_transpose_len {cl ll}
+  (A: transpose (map (canonicalize elem_ty) cl) = Some ll)
+  (B: Forall (fun x => length x = ty_size elem_ty) cl) :
+  Forall (fun x => length x = ty_size elem_ty) ll.
+Proof.
+Admitted.
+
 Lemma encode_elim_len_check :
   (fun x => encode elem_ty x >>=
   (fun t : list AbstractByte =>
@@ -49,7 +58,8 @@ exists vs, v = VTuple vs
 /\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs
 /\ (Z.of_nat (length vs) = count)%Z
 /\ exists ll, transpose (map (encode elem_ty) vs) = Some ll
-/\ encode t v = Some (concat ll).
+/\ Z.of_nat (length ll) = count%Z
+/\ exists _: (Forall (fun x => length x = ty_size elem_ty) ll), encode t v = Some (concat ll).
 Proof.
 unfold decode in Hdec. fold decode in Hdec.
 unfold decode_array in Hdec.
@@ -77,6 +87,7 @@ unfold encode_array.
 simpl.
 
 unfold assuming.
+assert (count >= 0)%Z as Hnnc. { apply (non_neg_count Hwf). }
 destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   assert (Z.of_nat (length tr_v) = count)%Z; cycle 1. { lia. }
   assert (length l = ty_size elem_ty * Z.to_nat count). { lia. }
@@ -86,9 +97,6 @@ destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   assert (length m = Z.to_nat count).
   { rewrite <- Hm. rewrite map_length. auto. }
   rewrite <- (transpose_len Htr).
-  rewrite H0.
-  rewrite Z2Nat.id. { auto. }
-  assert (count >= 0)%Z. { apply (non_neg_count Hwf). }
   lia.
 }
 split. { lia. }
@@ -105,20 +113,33 @@ destruct (canonicalize_lemma2 elem_ty elem_props (elem_ty_wf Hwf) Htr) as [ll Hl
 rewrite Hll.
 simpl.
 exists ll.
-split; auto.
+split. { auto. }
+assert (length l = ty_size elem_ty * Z.to_nat count).
+{ lia. }
+
+destruct (chunks_len H) as [Hll1 Hll2].
+split. {
+  rewrite <- (transpose_len Hll).
+  rewrite map_length.
+  rewrite Hll1.
+  lia.
+}
+
+exists (canon_transpose_len Hll Hll2).
+auto.
 Qed.
 
 Lemma array_rt1 : rt1 t.
 Proof.
 intros Hwf v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hwf Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Henc).
+destruct (array_dec Hwf Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Hlen_ll & Hlen_inner_ll & Henc).
 exists (concat ll).
 split. { assumption. }
 
 unfold decode. fold decode.
 unfold decode_array.
-
+rewrite (chunks_concat Hlen_inner_ll).
 Admitted.
 
 Lemma array_rt2 : rt2 t.
