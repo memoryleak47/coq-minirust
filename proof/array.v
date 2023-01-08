@@ -42,11 +42,6 @@ Proof.
   auto.
 Qed.
 
-Lemma chunks_concat {T} {s} {l : list (list T)} (H: Forall (fun x => length x = s) l) :
-  utils.chunks (concat l) s = l.
-Proof.
-Admitted.
-
 (* this already proves that the resulting value `v` can be encoded again *)
 Lemma array_dec {l v} (Hwf: wf t) (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
@@ -85,7 +80,7 @@ unfold assuming.
 destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   assert (Z.of_nat (length tr_v) = count)%Z; cycle 1. { lia. }
   assert (length l = ty_size elem_ty * Z.to_nat count). { lia. }
-  have Hcl (chunks_len H).
+  destruct (chunks_len H) as [Hcl _].
   declare m Hm (map (decode elem_ty) (chunks l (ty_size elem_ty))).
   rewrite Hm in Htr.
   assert (length m = Z.to_nat count).
@@ -117,7 +112,7 @@ Lemma array_rt1 : rt1 t.
 Proof.
 intros Hwf v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hwf Hdec) as (vs & -> & Hcnt & Hvs & l' & ll & Htr & Henc).
+destruct (array_dec Hwf Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Henc).
 exists (concat ll).
 split. { assumption. }
 
