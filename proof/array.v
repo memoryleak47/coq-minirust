@@ -24,14 +24,15 @@ Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size 
 Proof.
 Admitted.
 
-(* TODO B is redundant, this can be simplified.
- canonicalize always returns list of length ty_size elem_ty *)
 Lemma canon_transpose_len {cl ll}
-  (A: transpose (map (canonicalize elem_ty) cl) = Some ll)
-  (B: Forall (fun x => length x = ty_size elem_ty) cl) :
+  (Hwf: wf t)
+  (A: transpose (map (canonicalize elem_ty) cl) = Some ll) :
   Forall (fun x => length x = ty_size elem_ty) ll.
 Proof.
-Admitted.
+apply (transpose_map_Forall A).
+intros x y Hcan.
+apply (canonicalize_len elem_ty elem_props (elem_ty_wf Hwf) Hcan).
+Qed.
 
 Lemma encode_elim_len_check :
   (fun x => encode elem_ty x >>=
@@ -125,7 +126,7 @@ split. {
   lia.
 }
 
-exists (canon_transpose_len Hll Hll2).
+exists (canon_transpose_len Hwf Hll).
 auto.
 Qed.
 

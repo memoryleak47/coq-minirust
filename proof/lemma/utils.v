@@ -61,3 +61,10 @@ apply IHl.
 inversion X.
 destruct a; destruct (transpose l); inversion H0; auto.
 Qed.
+
+Lemma transpose_map_Forall {T1 T2} {l: list T1} {l': list T2} {P: T2 -> Prop} {f: T1 -> option T2}
+  (A: transpose (map f l) = Some l')
+  (B: forall x, forall y, f x = Some y -> P y) :
+  Forall P l'.
+Proof.
+Admitted.

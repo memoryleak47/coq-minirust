@@ -58,4 +58,16 @@ exists (x' :: x0).
 auto.
 Qed.
 
+Lemma canonicalize_len {l l'} (H: canonicalize ty l = Some l') :
+  length l' = ty_size ty.
+Proof.
+unfold canonicalize in H.
+destruct (decode ty l) eqn:E; cycle 1.
+{ simpl in H. discriminate H. }
+
+simpl in H.
+
+(* TODO we need the lemma that ensures that encoding yields the correct size *)
+Admitted.
+
 End canonicalize.
