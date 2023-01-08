@@ -20,9 +20,10 @@ Proof. inversion Hwf. inversion H0. auto. Qed.
 Lemma non_neg_count (Hwf: wf t) : (count >= 0)%Z.
 Proof. inversion Hwf. inversion H0. auto. Qed.
 
-Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size elem_ty.
+Lemma encode_elem_len {v l} (Hwf: wf t) (H: encode elem_ty v = Some l) : length l = ty_size elem_ty.
 Proof.
-Admitted.
+apply (PR_ENCODE_LEN elem_ty elem_props (elem_ty_wf Hwf) _ _ H).
+Qed.
 
 Lemma encode_tr {vs ll}
   (H: transpose (map (encode elem_ty) vs) = Some ll) :
@@ -40,7 +41,7 @@ intros x y Hcan.
 apply (canonicalize_len elem_ty elem_props (elem_ty_wf Hwf) Hcan).
 Qed.
 
-Lemma encode_elim_len_check :
+Lemma encode_elim_len_check (Hwf: wf t) :
   (fun x => encode elem_ty x >>=
   (fun t : list AbstractByte =>
     if length t =? ty_size elem_ty
@@ -53,7 +54,7 @@ Proof.
   { simpl. auto. }
 
   simpl.
-  rewrite (encode_elem_len Hx).
+  rewrite (encode_elem_len Hwf Hx).
   rewrite Nat.eqb_refl.
   auto.
 Qed.
@@ -110,7 +111,7 @@ split. { lia. }
 
 simpl.
 
-rewrite encode_elim_len_check.
+rewrite (encode_elim_len_check Hwf).
 
 rewrite (transpose_map Htr).
 replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_ty); cycle 1.
