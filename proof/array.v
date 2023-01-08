@@ -25,11 +25,83 @@ Proof.
 apply (PR_ENCODE_LEN elem_ty elem_props (elem_ty_wf Hwf) _ _ H).
 Qed.
 
-Lemma encode_tr {vs ll}
+Lemma encode_tr {vs ll orig_ll}
+  (Hwf: wf t)
+  (Hdec: transpose (map (decode elem_ty) orig_ll) = Some vs)
   (H: transpose (map (encode elem_ty) vs) = Some ll) :
   transpose (map (fun x : Value => encode elem_ty x >>= decode elem_ty) vs) = Some vs.
 Proof.
-Admitted.
+generalize dependent orig_ll.
+generalize dependent vs.
+induction ll as [|x ll IH]. {
+  intros vs Henc ll Hdec.
+  rewrite (transpose_nil Henc).
+  simpl.
+  auto.
+}
+
+intros vs Henc ll' Hdec.
+destruct vs as [|v vs'].
+{ simpl. auto. }
+
+assert (is_valid_for elem_ty v). {
+  destruct ll'.
+  { simpl in Hdec. inversion Hdec. }
+
+  simpl in Hdec.
+  destruct (decode elem_ty l) eqn:E; cycle 1.
+  { discriminate Hdec. }
+
+  destruct (transpose (map (decode elem_ty) ll')); cycle 1.
+  { simpl in Hdec. discriminate Hdec. }
+
+  simpl in Hdec.
+  inversion Hdec.
+  rewrite <- H0.
+  exists l.
+  assumption.
+}
+
+destruct (PR_RT1 elem_ty elem_props (elem_ty_wf Hwf) v H) as (x' & Henc' & Hdec').
+simpl.
+rewrite Henc'.
+simpl.
+rewrite Hdec'.
+simpl.
+assert (transpose (map (encode elem_ty) vs') = Some ll). {
+  clear - vs' ll Henc.
+  simpl in Henc.
+  destruct (encode elem_ty v); cycle 1.
+  { simpl in Henc. discriminate Henc. }
+
+  destruct (transpose (map (encode elem_ty) vs')); cycle 1.
+  { simpl in Henc. discriminate Henc. }
+
+  simpl in Henc. inversion Henc.
+  auto.
+}
+destruct ll'.
+{ simpl in Hdec. discriminate Hdec. }
+
+assert (transpose (map (decode elem_ty) ll') = Some vs'). {
+  clear - ll' vs' Hdec.
+  simpl in Hdec.
+  destruct (decode elem_ty l); cycle 1.
+  { discriminate Hdec. }
+
+  destruct (transpose (map (decode elem_ty) ll')); cycle 1.
+  { simpl in Hdec. discriminate Hdec. }
+
+  simpl in Hdec.
+  inversion Hdec.
+  auto.
+}
+
+rewrite (IH vs' H0 ll' H1).
+simpl.
+auto.
+Qed.
+
 
 Lemma canon_transpose_len {cl ll}
   (Hwf: wf t)
@@ -149,7 +221,7 @@ unfold decode. fold decode.
 unfold decode_array.
 rewrite (chunks_concat Hlen_inner_ll).
 rewrite (transpose_map Htr_enc).
-rewrite (encode_tr Htr_enc).
+rewrite (encode_tr Hwf Htr_dec Htr_enc).
 simpl.
 assert (length ll = Z.to_nat count). { lia. }
 rewrite (concat_len H Hlen_inner_ll).

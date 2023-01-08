@@ -1,4 +1,5 @@
 Require Import List.
+Import ListNotations.
 From Minirust.def Require Import utils.
 
 Lemma declare_impl {T: Type} (t: T) : exists t', t=t'. exists t. reflexivity. Qed.
@@ -68,3 +69,18 @@ Lemma transpose_map_Forall {T1 T2} {l: list T1} {l': list T2} {P: T2 -> Prop} {f
   Forall P l'.
 Proof.
 Admitted.
+
+Lemma transpose_nil {T1 T2 l} {f: T1 -> option T2} (H: transpose (map f l) = Some []) :
+ l = [].
+Proof.
+destruct l. { auto. }
+simpl in H.
+destruct (f t); cycle 1.
+{ discriminate H. }
+
+destruct (transpose (map f l)); cycle 1.
+{ simpl in H. discriminate H. }
+
+simpl in H.
+inversion H.
+Qed.
