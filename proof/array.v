@@ -24,6 +24,12 @@ Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size 
 Proof.
 Admitted.
 
+Lemma encode_tr {vs ll}
+  (H: transpose (map (encode elem_ty) vs) = Some ll) :
+  transpose (map (fun x : Value => encode elem_ty x >>= decode elem_ty) vs) = Some vs.
+Proof.
+Admitted.
+
 Lemma canon_transpose_len {cl ll}
   (Hwf: wf t)
   (A: transpose (map (canonicalize elem_ty) cl) = Some ll) :
@@ -141,7 +147,18 @@ split. { assumption. }
 unfold decode. fold decode.
 unfold decode_array.
 rewrite (chunks_concat Hlen_inner_ll).
-Admitted.
+rewrite (transpose_map Htr_enc).
+rewrite (encode_tr Htr_enc).
+simpl.
+assert (length ll = Z.to_nat count). { lia. }
+rewrite (concat_len H Hlen_inner_ll).
+assert (Z.of_nat (ty_size elem_ty * Z.to_nat count) =
+    Z.of_nat (ty_size elem_ty) * count)%Z. { lia. }
+rewrite H0.
+rewrite Z.eqb_refl.
+simpl.
+auto.
+Qed.
 
 Lemma array_rt2 : rt2 t.
 intros Hwf l v Hdec.
