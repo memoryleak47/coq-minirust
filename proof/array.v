@@ -173,6 +173,10 @@ Lemma array_mono2 : mono2 t.
 Proof.
 Admitted.
 
+Lemma array_encode_len : encode_len t.
+Proof.
+Admitted.
+
 Lemma array_props : Props t.
 Proof.
 split.
@@ -180,6 +184,7 @@ split.
 - apply array_rt2.
 - apply array_mono1.
 - apply array_mono2.
+- apply array_encode_len.
 Qed.
 
 End array.

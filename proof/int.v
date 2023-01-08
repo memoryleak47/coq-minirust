@@ -227,6 +227,14 @@ split.
   assumption.
 Qed.
 
+Lemma int_encode_len {size: Size} {signedness: Signedness} : encode_len (TInt size signedness).
+intros Hwf v l _ Henc.
+destruct (encode_int_pair Henc).
+{ apply (wf_int Hwf). }
+
+assumption.
+Qed.
+
 Lemma int_props {size: Size} {signedness: Signedness} : Props (TInt size signedness).
 Proof.
 split.
@@ -234,4 +242,5 @@ split.
 - apply int_rt2.
 - apply int_mono1.
 - apply int_mono2.
+- apply int_encode_len.
 Qed.

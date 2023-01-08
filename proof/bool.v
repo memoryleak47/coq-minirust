@@ -98,6 +98,13 @@ destruct (mk_bool_cases1 l).
 - rewrite H in H0. discriminate H0.
 Qed.
 
+Lemma bool_encode_len : encode_len TBool.
+intros Hwf v l _ Henc.
+destruct v; try inversion Henc.
+
+destruct b; inversion Henc; auto.
+Qed.
+
 Lemma bool_props : Props TBool.
 Proof.
 split.
@@ -105,4 +112,5 @@ split.
 - apply bool_rt2.
 - apply bool_mono1.
 - apply bool_mono2.
+- apply bool_encode_len.
 Qed.

@@ -31,7 +31,7 @@ induction l as [|a l IH].
      apply IH'.
 Qed.
 
-Lemma wrap_len bl : length (wrap_abstract bl None) = length bl.
+Lemma wrap_len bl {o} : length (wrap_abstract bl o) = length bl.
 Proof.
 induction bl as [|b bl IH].
 - reflexivity.

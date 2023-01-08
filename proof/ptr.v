@@ -199,6 +199,23 @@ split.
 apply wrap_unique_le; assumption.
 Qed.
 
+Lemma ptr_encode_len : encode_len t.
+Proof.
+intros Hwf v l Hval Henc.
+destruct Hval as [l' Hdec].
+unfold encode,encode_ptr in Henc.
+destruct v; try discriminate Henc.
+destruct (int_in_range a PTR_SIZE Unsigned) eqn:E; cycle 1.
+{ rewrite (encode_int_none E) in Henc. discriminate Henc. }
+
+destruct (rt1_int PTR_SIZE Unsigned a E ptr_size_gt0) as (bl' & Hbl' & _ & Out).
+rewrite <- Hbl' in Henc.
+simpl in Henc.
+inversion Henc.
+rewrite wrap_len.
+assumption.
+Qed.
+
 Lemma ptr_props : Props t.
 Proof.
 split.
@@ -206,6 +223,7 @@ split.
 - apply ptr_rt2.
 - apply ptr_mono1.
 - apply ptr_mono2.
+- apply ptr_encode_len.
 Qed.
 
 End ptr.
