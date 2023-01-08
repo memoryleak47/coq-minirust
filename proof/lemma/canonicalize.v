@@ -66,8 +66,7 @@ destruct (decode ty l) eqn:E; cycle 1.
 { simpl in H. discriminate H. }
 
 simpl in H.
-
-(* TODO we need the lemma that ensures that encoding yields the correct size *)
-Admitted.
+apply (PR_ENCODE_LEN ty ty_props ty_wf v l' H).
+Qed.
 
 End canonicalize.
