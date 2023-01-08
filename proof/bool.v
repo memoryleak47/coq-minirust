@@ -99,7 +99,7 @@ destruct (mk_bool_cases1 l).
 Qed.
 
 Lemma bool_encode_len : encode_len TBool.
-intros Hwf v l _ Henc.
+intros Hwf v l Henc.
 destruct v; try inversion Henc.
 
 destruct b; inversion Henc; auto.

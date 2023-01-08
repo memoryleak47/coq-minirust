@@ -201,8 +201,7 @@ Qed.
 
 Lemma ptr_encode_len : encode_len t.
 Proof.
-intros Hwf v l Hval Henc.
-destruct Hval as [l' Hdec].
+intros Hwf v l Henc.
 unfold encode,encode_ptr in Henc.
 destruct v; try discriminate Henc.
 destruct (int_in_range a PTR_SIZE Unsigned) eqn:E; cycle 1.

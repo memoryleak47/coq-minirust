@@ -228,7 +228,7 @@ split.
 Qed.
 
 Lemma int_encode_len {size: Size} {signedness: Signedness} : encode_len (TInt size signedness).
-intros Hwf v l _ Henc.
+intros Hwf v l Henc.
 destruct (encode_int_pair Henc).
 { apply (wf_int Hwf). }
 

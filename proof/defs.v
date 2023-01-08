@@ -5,7 +5,6 @@ Definition canonicalize ty l := decode ty l >>= encode ty.
 Definition encode_len (ty: Ty) :=
   wf ty ->
   forall v, forall l,
-  is_valid_for ty v ->
   encode ty v = Some l ->
   length l = ty_size ty.
 
