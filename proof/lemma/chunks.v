@@ -1,7 +1,7 @@
-Require Import List Lia.
+Require Import List Lia FunctionalExtensionality.
 Import ListNotations.
 From Minirust.def Require Import encoding utils.
-From Minirust.proof.lemma Require Import utils.
+From Minirust.proof.lemma Require Import utils subslice.
 
 Lemma concat_len {T n k} {ll: list (list T)}
   (Hl1: length ll = k)
@@ -40,10 +40,28 @@ rewrite app_length.
 lia.
 Qed.
 
-Lemma chunks_len {T c s} {l: list T} (H: length l = c * s) :
-  length (chunks c s l) = c /\ Forall (fun x => length x = s) (chunks c s l).
+Lemma chunks_len1 {T c s} {l: list T} (H: length l = c * s) :
+  length (chunks c s l) = c.
+Proof.
+generalize dependent l.
+induction c.
+{ intros l H. simpl. auto. }
+
+intros l H.
+simpl.
+f_equal.
+rewrite map_length.
+apply seq_length.
+Qed.
+
+Lemma chunks_len2 {T c s} {l: list T} (H: length l = c * s) :
+  Forall (fun x => length x = s) (chunks c s l).
 Proof.
 Admitted.
+
+Lemma chunks_len {T c s} {l: list T} (H: length l = c * s) :
+  length (chunks c s l) = c /\ Forall (fun x => length x = s) (chunks c s l).
+Proof. split; [> apply (chunks_len1 H) | apply (chunks_len2 H)]. Qed.
 
 Lemma chunks_concat {T c s} {l : list (list T)} (H1: length l = c) (H: Forall (fun x => length x = s) l) :
   chunks c s (concat l) = l.

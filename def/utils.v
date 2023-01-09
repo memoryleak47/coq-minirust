@@ -23,21 +23,11 @@ Fixpoint transpose {T: Type} (l: list (option T)) : option (list T) :=
   | (Some a)::l' => (transpose l') o-> (fun r => a::r)
   end.
 
-Fixpoint subslice_with_length {T: Type} (l: list T) (start: nat) (length: nat) : list T :=
-  match (l,start,length) with
-  | (_::l', S start', ln) => subslice_with_length l' start' ln
-  | (x::l', 0, S ln') => x::(subslice_with_length l' 0 ln')
-  | (_, 0, 0) => []
-  | ([],_,_) => []
-  end.
+Definition subslice_with_length {T: Type} (l: list T) (start: nat) (length: nat) : list T :=
+  firstn length (skipn start l).
 
-Fixpoint write_subslice_at_index {T: Type} (l: list T) (start: nat) (other: list T) : list T :=
-  match (l,start,other) with
-  | (x::l', S start', o) => x::(write_subslice_at_index l' start' o)
-  | (_::l', 0, y::o') => y::(write_subslice_at_index l' 0 o')
-  | (l, 0, []) => l
-  | ([],_,_) => []
-  end.
+Definition write_subslice_at_index {T: Type} (l: list T) (start: nat) (other: list T) : list T :=
+  (firstn start l) ++ other ++ skipn (start + length other) l.
 
 Definition assuming {T: Type} (f: T -> bool) (t: T)  :=
   if f t then Some t else None.
