@@ -236,8 +236,21 @@ auto.
 Qed.
 
 Lemma array_rt2 : rt2 t.
-intros Hwf l v Hdec.
 Proof.
+intros Hwf l v Hdec.
+destruct (array_dec Hwf Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Hlen_ll & Hlen_inner_ll & Henc).
+exists (concat ll).
+split. { assumption. }
+
+(* thoughts:
+l will be converted with l = concat (chunks l)
+And then we can prove some general `le (concat a) (concat b)`,
+if a and b have the same shapes;
+and if a and b are element-wise le (I can use combine to express this).
+
+For i we then know that decode (chunks l)[i] = vs[i] and encode vs[i] = ll[i].
+Hence we just have to apply rt2 of elem_ty.
+*)
 Admitted.
 
 Lemma array_mono1 : mono1 t.
