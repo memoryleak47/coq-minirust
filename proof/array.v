@@ -250,7 +250,39 @@ Admitted.
 
 Lemma array_encode_len : encode_len t.
 Proof.
-Admitted.
+intros Hwf.
+intros v l Henc.
+unfold encode in Henc. fold encode in Henc.
+unfold encode_array in Henc.
+destruct v; try discriminate Henc.
+simpl in Henc.
+unfold assuming in Henc.
+destruct (Z.of_nat (length l0) =? count)%Z eqn:E; try discriminate Henc.
+simpl in Henc.
+match goal with
+| _ : (?a_ o-> _ = Some l) |- _ => declare a Ha a_
+end.
+destruct a; cycle 1.
+{ rewrite Ha in Henc.  discriminate Henc. }
+
+rewrite Ha in Henc.
+simpl in Henc.
+inversion Henc.
+apply concat_len.
+{ rewrite <- (transpose_len Ha). rewrite map_length. lia. }
+
+clear - Ha.
+apply (transpose_map_Forall Ha).
+intros v l Henc.
+fold ty_size.
+destruct (encode elem_ty v); try discriminate Henc.
+simpl in Henc.
+destruct (length l2 =? ty_size elem_ty) eqn:E; try discriminate Henc.
+inversion Henc.
+rewrite <- H0.
+apply EqNat.beq_nat_true_stt.
+auto.
+Qed.
 
 Lemma array_props : Props t.
 Proof.
