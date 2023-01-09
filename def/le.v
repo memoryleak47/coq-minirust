@@ -6,6 +6,8 @@ From Minirust.def Require Import ty.
 Class DefinedRelation (T : Type) := {
   le : T -> T -> Prop
 }.
+(* TODO consider *)
+(* Global Hint Mode DefinedRelation + : typeclass_instances. *)
 
 Global Instance AbstractByte_DefinedRelation : DefinedRelation AbstractByte := {
   le x y :=
@@ -27,6 +29,9 @@ Definition le_list (T: Type) (x y : list T) (elem_f: T -> T -> Prop) : Prop :=
   in
 
   f x y.
+
+(* TODO consider *)
+(* Global Instance list_DefinedRelation `(DefinedRelation T) : DefinedRelation (list T) := { *)
 
 Global Instance list_DefinedRelation (T: Type) (_: DefinedRelation T) : DefinedRelation (list T) := {
   le x y := le_list T x y le
