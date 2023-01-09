@@ -96,4 +96,33 @@ Proof. split; [> apply (chunks_len1 H) | apply (chunks_len2 H)]. Qed.
 Lemma chunks_concat {T c s} {l : list (list T)} (H1: length l = c) (H: Forall (fun x => length x = s) l) :
   chunks c s (concat l) = l.
 Proof.
-Admitted.
+rewrite <- H1. clear c H1.
+induction l as [|x l IH].
+{ simpl. unfold chunks. simpl. auto. }
+
+simpl.
+rewrite chunks_step.
+assert (length x = s).
+{ inversion H. auto. }
+
+f_equal. {
+  rewrite firstn_app.
+  replace (s - length x) with 0; try lia.
+  simpl.
+  rewrite app_nil_r.
+  rewrite <- H0.
+  apply firstn_all.
+}
+
+assert (Forall (fun x => length x = s) l).
+{ inversion H. auto. }
+
+rewrite skipn_app.
+replace (s - length x) with 0; try lia.
+simpl.
+rewrite <- H0.
+rewrite skipn_all.
+simpl.
+rewrite H0.
+apply (IH H1).
+Qed.
