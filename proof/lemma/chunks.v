@@ -3,6 +3,24 @@ Import ListNotations.
 From Minirust.def Require Import encoding utils.
 From Minirust.proof.lemma Require Import utils subslice.
 
+Lemma chunks_step {s c T} {l: list T}: chunks (S c) s l = (firstn s l)::(chunks c s (skipn s l)).
+Proof.
+unfold chunks.
+simpl.
+rewrite subslice_zero.
+f_equal.
+unfold subslice_with_length.
+rewrite <- seq_shift.
+rewrite map_map.
+f_equal.
+apply functional_extensionality_dep.
+intros x.
+f_equal.
+rewrite skipn_add.
+f_equal.
+lia.
+Qed.
+
 Lemma concat_len {T n k} {ll: list (list T)}
   (Hl1: length ll = k)
   (Hl2: Forall (fun x => length x = n) ll) :
@@ -57,7 +75,19 @@ Qed.
 Lemma chunks_len2 {T c s} {l: list T} (H: length l = c * s) :
   Forall (fun x => length x = s) (chunks c s l).
 Proof.
-Admitted.
+generalize dependent l.
+induction c as [|c IH].
+{ intros l H. apply Forall_nil. }
+
+intros l H.
+rewrite chunks_step.
+apply Forall_cons.
+{ rewrite firstn_length. lia. }
+
+apply IH.
+rewrite skipn_length.
+lia.
+Qed.
 
 Lemma chunks_len {T c s} {l: list T} (H: length l = c * s) :
   length (chunks c s l) = c /\ Forall (fun x => length x = s) (chunks c s l).
