@@ -44,16 +44,3 @@ Definition assuming {T: Type} (f: T -> bool) (t: T)  :=
 
 Definition assuming_const {T: Type} (b: bool) (t: T)  :=
   if b then Some t else None.
-
-Fixpoint chunks_impl {T: Type} (gas: nat) (l: list T) (chunk_size: nat) :=
-  match gas with
-  | 0 => []
-  | S gas' =>
-    match firstn chunk_size l with
-    | [] => []
-    | x => x::(chunks_impl gas' (skipn chunk_size l) chunk_size)
-    end
-  end.
-
-Definition chunks {T: Type} (l: list T) (chunk_size: nat) :=
-  chunks_impl (length l) l chunk_size.

@@ -135,7 +135,7 @@ Qed.
 Lemma array_dec {l v} (Hwf: wf t) (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
 /\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
-/\ transpose (map (decode elem_ty) (chunks l (ty_size elem_ty))) = Some vs
+/\ transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l)) = Some vs
 /\ (Z.of_nat (length vs) = count)%Z
 /\ exists ll, transpose (map (encode elem_ty) vs) = Some ll
 /\ Z.of_nat (length ll) = count%Z
@@ -172,10 +172,10 @@ destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   assert (Z.of_nat (length tr_v) = count)%Z; cycle 1. { lia. }
   assert (length l = ty_size elem_ty * Z.to_nat count). { lia. }
   destruct (chunks_len H) as [Hcl _].
-  declare m Hm (map (decode elem_ty) (chunks l (ty_size elem_ty))).
+  declare m Hm (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l)).
   rewrite Hm in Htr.
   assert (length m = Z.to_nat count).
-  { rewrite <- Hm. rewrite map_length. auto. }
+  { rewrite <- Hm. rewrite map_length. auto. refine (proj1 (chunks_len _)). lia. }
   rewrite <- (transpose_len Htr).
   lia.
 }
@@ -201,7 +201,8 @@ destruct (chunks_len H) as [Hll1 Hll2].
 split. {
   rewrite <- (transpose_len Hll).
   rewrite map_length.
-  rewrite Hll1.
+  assert (length (chunks (Z.to_nat count) (ty_size elem_ty) l) = Z.to_nat count).
+  { refine (proj1 (chunks_len _)). lia. }
   lia.
 }
 
@@ -219,7 +220,8 @@ split. { assumption. }
 
 unfold decode. fold decode.
 unfold decode_array.
-rewrite (chunks_concat Hlen_inner_ll).
+assert (length ll = Z.to_nat count) as Hlen_ll'. { lia. }
+rewrite (chunks_concat Hlen_ll' Hlen_inner_ll).
 rewrite (transpose_map Htr_enc).
 rewrite (encode_tr Hwf Htr_dec Htr_enc).
 simpl.

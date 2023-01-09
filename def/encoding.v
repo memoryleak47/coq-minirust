@@ -123,16 +123,19 @@ Definition encode_array (elem : Ty) (count: Int) (v: Value) (subencode: Encoder)
   >>= (fun vals => transpose (map enc vals))
   o-> (fun bytes => concat bytes).
 
-Definition mk_uninit (size: Size) := map (fun _ => Uninit) (seq 0 size).
+Definition chunks {T} (count: nat) (elem_size: nat) (l: list T) :=
+  map (fun i => subslice_with_length l (i*elem_size) elem_size) (seq 0 count).
 
 Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecoder: Decoder) : option Value :=
   let elem_size := ty_size elem in
   let full_size := (Z.of_nat elem_size * count)%Z in
-  let c := chunks l elem_size in
+  let c := chunks (Z.to_nat count) elem_size l in
   let dec := subdecoder elem in
   transpose (map dec c)
   >>= assuming_const (Z.of_nat (length l) =? full_size)%Z
   o-> VTuple.
+
+Definition mk_uninit (size: Size) := map (fun _ => Uninit) (seq 0 size).
 
 (* tuples *)
 Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
