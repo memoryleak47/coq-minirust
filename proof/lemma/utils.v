@@ -1,6 +1,7 @@
 Require Import List.
 Import ListNotations.
 From Minirust.def Require Import utils ty le.
+From Minirust.proof.lemma Require Import le.
 
 Lemma declare_impl {T: Type} (t: T) : exists t', t=t'. exists t. reflexivity. Qed.
 
@@ -111,8 +112,49 @@ Section utils.
 
 Context {params:Params}.
 
-Lemma transpose_le [a b: list (option Value)] (Hle: le a b) :
-  le (transpose a) (transpose b).
-Admitted.
+Lemma transpose_le_step [o1 o2: option (list Value)] [v1 v2]
+  (Hle1: le o1 o2)
+  (Hle2: le v1 v2) :
+  le (o1 o-> (fun r => v1 :: r)) (o2 o-> (fun r => v2 :: r)).
+Proof.
+destruct o1; cycle 1.
+{ simpl. auto. }
+
+destruct o2; cycle 1.
+{ simpl. auto. }
+
+simpl (Some _ o-> _).
+assert (le (v1 :: l) (v2 :: l0)); cycle 1. { auto. }
+
+rewrite le_list_step.
+auto.
+Qed.
+
+Lemma transpose_le [l1 l2: list (option Value)] (Hle: le l1 l2) :
+  le (transpose l1) (transpose l2).
+Proof.
+generalize dependent l2.
+induction l1 as [|x1 l1 IH].
+{ intros. simpl in Hle. destruct l2; auto. contradict Hle. }
+
+intros.
+destruct l2 as [|x2 l2].
+{ contradict Hle. }
+
+destruct x1; cycle 1.
+{ simpl. auto. }
+
+destruct x2; cycle 1.
+{ simpl in Hle. contradict (proj1 Hle). }
+
+simpl (transpose (Some _ :: _)).
+assert (le l1 l2).
+{ inversion Hle. auto. }
+
+have A (IH l2 H).
+apply (transpose_le_step A).
+inversion Hle.
+auto.
+Qed.
 
 End utils.
