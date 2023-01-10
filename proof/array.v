@@ -136,7 +136,7 @@ Qed.
 (* this already proves that the resulting value `v` can be encoded again *)
 Lemma array_dec {l v} (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
-/\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
+/\ (Z.of_nat (length l) = count * Z.of_nat (ty_size elem_ty))%Z
 /\ transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l)) = Some vs
 /\ (Z.of_nat (length vs) = count)%Z
 /\ exists ll, transpose (map (encode elem_ty) vs) = Some ll
@@ -244,16 +244,72 @@ destruct (array_dec Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_en
 exists (concat ll).
 split. { assumption. }
 
-(* thoughts:
-l will be converted with l = concat (chunks l)
-And then we can prove some general `le (concat a) (concat b)`,
-if a and b have the same shapes;
-and if a and b are element-wise le (I can use combine to express this).
+assert (length l = (Z.to_nat count) * ty_size elem_ty) as Hl. { lia. }
+rewrite <- (concat_chunks Hl).
 
-For i we then know that decode (chunks l)[i] = vs[i] and encode vs[i] = ll[i].
-Hence we just have to apply rt2 of elem_ty.
-*)
-Admitted.
+apply concat_le.
+{ rewrite chunks_len1; lia. }
+
+declare lc Hlc (chunks (Z.to_nat count) (ty_size elem_ty) l).
+rewrite Hlc in *.
+
+rewrite (transpose_map Htr_dec) in Htr_enc.
+clear - Htr_enc ll lc count props_IH Hwf.
+match goal with
+| _ : transpose (map ?f_ _) = Some ll |- _ => assert (f_ = canonicalize elem_ty)
+end. cycle 1. {
+  apply functional_extensionality_dep.
+  intros x.
+  auto.
+}
+rewrite H in Htr_enc. clear H.
+
+generalize dependent ll.
+induction lc as [|x lc IH]. {
+  intros.
+  simpl in Htr_enc.
+  inversion Htr_enc.
+  simpl (combine _ _).
+  apply Forall_nil.
+}
+
+intros.
+destruct ll. {
+  simpl in Htr_enc.
+  destruct (canonicalize elem_ty x ); cycle 1. { discriminate Htr_enc. }
+  simpl in Htr_enc.
+  destruct ((transpose
+             (map (canonicalize elem_ty) lc))); cycle 1. { discriminate Htr_enc. }
+  simpl in Htr_enc.
+  inversion Htr_enc.
+}
+
+replace (combine _ _) with ((l,x) :: (combine ll lc)); cycle 1. { auto. }
+
+apply Forall_cons. {
+  simpl (fst _). simpl (snd _).
+  simpl in Htr_enc.
+  destruct (canonicalize elem_ty x) eqn:E; cycle 1. { discriminate Htr_enc. }
+  destruct ((transpose
+             (map (canonicalize elem_ty) lc))) eqn:F; cycle 1. { discriminate Htr_enc. }
+  simpl in Htr_enc. inversion Htr_enc.
+  rewrite <- H0.
+  apply (@canonicalize_le params elem_ty elem_props _ _ E).
+}
+
+apply IH.
+rewrite map_cons in Htr_enc.
+simpl in Htr_enc.
+destruct (canonicalize elem_ty x); cycle 1.
+{ discriminate Htr_enc. }
+
+destruct ((transpose (map (canonicalize elem_ty) lc))); cycle 1.
+{ discriminate Htr_enc. }
+
+simpl in Htr_enc.
+inversion Htr_enc.
+auto.
+Qed.
 
 Lemma array_mono1 : mono1 t.
 Proof.

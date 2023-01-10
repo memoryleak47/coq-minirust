@@ -1,7 +1,7 @@
 Require Import Lia Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith ssrbool.
 Import ListNotations.
 
-From Minirust.def Require Import ty encoding thm utils wf.
+From Minirust.def Require Import ty encoding thm utils wf le.
 From Minirust.proof Require Import defs.
 From Minirust.proof.lemma Require Import utils.
 
@@ -67,6 +67,23 @@ destruct (decode ty l) eqn:E; cycle 1.
 
 simpl in H.
 apply (PR_ENCODE_LEN ty ty_props v l' H).
+Qed.
+
+Lemma canonicalize_le {l l'} (H: canonicalize ty l = Some l') :
+  le l' l.
+Proof.
+unfold le.
+unfold canonicalize in H.
+destruct (decode ty l) eqn:Hdec; cycle 1.
+{ discriminate H. }
+
+simpl in H.
+
+destruct (PR_RT2 _ ty_props _ _ Hdec) as [l'' [Henc' Hle]].
+rewrite Henc' in H.
+inversion H.
+rewrite H1 in Hle,Henc'. clear l'' H1 H.
+auto.
 Qed.
 
 End canonicalize.

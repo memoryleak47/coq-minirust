@@ -1,7 +1,11 @@
 Require Import List Lia FunctionalExtensionality.
 Import ListNotations.
-From Minirust.def Require Import encoding utils.
+From Minirust.def Require Import encoding utils le ty.
 From Minirust.proof.lemma Require Import utils subslice.
+
+Section chunks.
+
+Context {params: Params}.
 
 Lemma chunks_step {s c T} {l: list T}: chunks (S c) s l = (firstn s l)::(chunks c s (skipn s l)).
 Proof.
@@ -126,3 +130,14 @@ simpl.
 rewrite H0.
 apply (IH H1).
 Qed.
+
+Lemma concat_chunks [T c s] [l: list T] (H: length l = c * s): concat (chunks c s l) = l.
+Admitted.
+
+Lemma concat_le [l1 l2: list (list AbstractByte)]
+  (Hl: length l1 = length l2)
+  (H: Forall (fun x => le (fst x) (snd x)) (combine l1 l2)) :
+ le (concat l1) (concat l2).
+Admitted.
+
+End chunks.
