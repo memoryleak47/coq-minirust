@@ -429,8 +429,34 @@ simpl in Hval1.
 apply (array_mono1_helper Hle Htr_enc1 Htr_enc2 Htr_dec1 Htr_dec2).
 Qed.
 
-Lemma array_mono2 : mono2 t.
+Lemma array_mono2_helper [l1 l2: list AbstractByte] [vs1]
+  (Hle: le l1 l2)
+  (Hdec1:  transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l1)) = Some vs1)
+  : exists vs2, transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l2)) = Some vs2 /\
+  le vs1 vs2.
 Admitted.
+
+Lemma array_mono2 : mono2 t.
+Proof.
+intros l1 l2 Hle.
+destruct (decode t l1) eqn:Hdec1; cycle 1.
+{ simpl. auto. }
+
+destruct (array_dec Hdec1) as (vs1 & -> & Hlen_l1 & Htr_dec1 & Hlen_vs1 & ll1 & Htr_enc1 & Hlen_ll1 & Hlen_inner_ll1 & Henc1).
+assert (length l2 = Z.to_nat count * ty_size elem_ty).
+{ have A (le_len Hle). lia. }
+
+unfold decode. fold decode.
+unfold decode_array.
+
+replace ((Z.of_nat (length l2) =? Z.of_nat (ty_size elem_ty) * count)%Z) with true; cycle 1.
+{ lia. }
+
+destruct (array_mono2_helper Hle Htr_dec1) as (vs2 & Htr_dec2 & HFor).
+rewrite Htr_dec2.
+simpl.
+auto.
+Qed.
 
 Lemma array_encode_len : encode_len t.
 Proof.

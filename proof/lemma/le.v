@@ -110,4 +110,15 @@ Proof.
 auto.
 Qed.
 
+Lemma le_len {l1 l2 : list AbstractByte} (H: le l1 l2)
+  : length l1 = length l2.
+Proof.
+induction (mk_le_list _ _ H). { auto. }
+
+simpl.
+f_equal.
+apply IHl.
+apply (proj2 l1).
+Qed.
+
 End le.
