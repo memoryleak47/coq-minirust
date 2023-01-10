@@ -429,12 +429,47 @@ simpl in Hval1.
 apply (array_mono1_helper Hle Htr_enc1 Htr_enc2 Htr_dec1 Htr_dec2).
 Qed.
 
+Lemma map_dec_le [cl1 cl2: list (list AbstractByte)]
+  (Hlen1 : length cl1 = Z.to_nat count /\ Forall (fun x => length x = ty_size elem_ty) cl1)
+  (Hlen2 : length cl2 = Z.to_nat count /\ Forall (fun x => length x = ty_size elem_ty) cl2)
+  (Hle: le cl1 cl2) :
+  le (map (decode elem_ty) cl1) (map (decode elem_ty) cl2).
+Admitted.
+
 Lemma array_mono2_helper [l1 l2: list AbstractByte] [vs1]
   (Hle: le l1 l2)
+  (Hlen1: length l1 = Z.to_nat count * ty_size elem_ty)
+  (Hlen2: length l2 = Z.to_nat count * ty_size elem_ty)
   (Hdec1:  transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l1)) = Some vs1)
   : exists vs2, transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l2)) = Some vs2 /\
   le vs1 vs2.
-Admitted.
+Proof.
+set (cl1 := chunks (Z.to_nat count) (ty_size elem_ty) l1).
+set (cl2 := chunks (Z.to_nat count) (ty_size elem_ty) l2).
+set (m1 := map (decode elem_ty) cl1).
+set (m2 := map (decode elem_ty) cl2).
+
+assert (le cl1 cl2).
+{ apply (chunks_le Hle Hlen1 Hlen2). }
+assert (le m1 m2).
+{ apply (map_dec_le (chunks_len Hlen1) (chunks_len Hlen2) H). }
+assert (le (transpose m1) (transpose m2)).
+{ apply transpose_le. auto. }
+
+destruct (transpose m1) eqn:E1; cycle 1.
+{ unfold m1 in E1. unfold cl1 in E1. rewrite Hdec1 in E1. inversion E1. }
+
+destruct (transpose m2) eqn:E2; cycle 1.
+{ contradict H1. }
+
+exists l0.
+split. { auto. }
+
+assert (vs1 = l) as ->.
+{ unfold m1 in E1. unfold cl1 in E1. rewrite E1 in Hdec1. inversion Hdec1. auto. }
+simpl in H1.
+auto.
+Qed.
 
 Lemma array_mono2 : mono2 t.
 Proof.
@@ -452,7 +487,8 @@ unfold decode_array.
 replace ((Z.of_nat (length l2) =? Z.of_nat (ty_size elem_ty) * count)%Z) with true; cycle 1.
 { lia. }
 
-destruct (array_mono2_helper Hle Htr_dec1) as (vs2 & Htr_dec2 & HFor).
+assert (length l1 = Z.to_nat count * ty_size elem_ty). { lia. }
+destruct (array_mono2_helper Hle H0 H Htr_dec1) as (vs2 & Htr_dec2 & HFor).
 rewrite Htr_dec2.
 simpl.
 auto.

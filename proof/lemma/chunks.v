@@ -214,4 +214,12 @@ inversion H.
 auto.
 Qed.
 
+Lemma chunks_le [c s] [l1 l2: list AbstractByte]
+  (Hle: le l1 l2)
+  (Hlen1 : length l1 = c * s)
+  (Hlen2 : length l2 = c * s):
+ le (chunks c s l1) (chunks c s l2).
+Proof.
+Admitted.
+
 End chunks.

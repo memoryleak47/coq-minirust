@@ -1,6 +1,6 @@
 Require Import List.
 Import ListNotations.
-From Minirust.def Require Import utils.
+From Minirust.def Require Import utils ty le.
 
 Lemma declare_impl {T: Type} (t: T) : exists t', t=t'. exists t. reflexivity. Qed.
 
@@ -106,3 +106,13 @@ apply Forall_cons.
 - apply (B _ _ F).
 - apply IH. inversion H1. auto.
 Qed.
+
+Section utils.
+
+Context {params:Params}.
+
+Lemma transpose_le [a b: list (option Value)] (Hle: le a b) :
+  le (transpose a) (transpose b).
+Admitted.
+
+End utils.
