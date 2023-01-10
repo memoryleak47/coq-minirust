@@ -132,7 +132,18 @@ apply (IH H1).
 Qed.
 
 Lemma concat_chunks [T c s] [l: list T] (H: length l = c * s): concat (chunks c s l) = l.
-Admitted.
+Proof.
+generalize dependent l.
+induction c as [|c IH].
+{ intros. simpl. destruct l; auto. simpl in H. discriminate H. }
+
+intros.
+rewrite chunks_step.
+simpl.
+rewrite IH. { apply firstn_skipn. }
+rewrite skipn_length.
+lia.
+Qed.
 
 Lemma concat_le [l1 l2: list (list AbstractByte)]
   (Hl: length l1 = length l2)
