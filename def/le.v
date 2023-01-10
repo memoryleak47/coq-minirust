@@ -3,6 +3,10 @@ Import ListNotations.
 
 From Minirust.def Require Import ty.
 
+Section le.
+
+Context {params: Params}.
+
 Class DefinedRelation (T : Type) := {
   le : T -> T -> Prop
 }.
@@ -80,3 +84,5 @@ Global Instance Value_DefinedRelation : DefinedRelation Value := {
 
     f x y
 }.
+
+End le.

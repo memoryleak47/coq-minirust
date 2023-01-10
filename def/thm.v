@@ -1,5 +1,9 @@
 From Minirust.def Require Import ty encoding le wf.
 
+Section thm.
+
+Context {params: Params}.
+
 Definition mono1 (ty: Ty) :=
   forall (v1 v2: Value),
   (le v1 v2)
@@ -27,3 +31,5 @@ Definition rt2 (ty: Ty) :=
   (decode ty l = Some v)
   -> exists (v_l: list AbstractByte),
   encode ty v = Some v_l /\ le v_l l.
+
+End thm.

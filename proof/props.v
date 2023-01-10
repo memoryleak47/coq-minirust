@@ -3,6 +3,10 @@ From Minirust.proof Require Import defs int bool ptr array.
 Require Import List.
 Import ListNotations.
 
+Section props.
+
+Context {params: Params}.
+
 Lemma cheat {P: Prop} : P.
 Admitted.
 
@@ -28,3 +32,5 @@ Proof. intros Hwf. destruct (gen_props ty); auto. Qed.
 
 Theorem gen_mono2 (ty: Ty) : wf ty -> mono2 ty.
 Proof. intros Hwf. destruct (gen_props ty); auto. Qed.
+
+End props.

@@ -3,6 +3,10 @@ Import ListNotations.
 
 From Minirust.def Require Import ty int_encoding.
 
+Section wf.
+
+Context {params: Params}.
+
 Definition valid_size (size: Size) : Prop := (int_in_range (Z.of_nat size) PTR_SIZE Signed) = true.
 
 Definition fields_fit_size (fields: Fields) (size : Size) :=
@@ -66,3 +70,5 @@ Fixpoint wf (t: Ty) : Prop :=
                              /\ chunks_sorted_and_disjoint chunks
                              /\ chunks_fit_size chunks size
   end.
+
+End wf.

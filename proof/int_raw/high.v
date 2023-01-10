@@ -2,6 +2,10 @@ Require Import Coq.Init.Byte FunctionalExtensionality EqdepFacts List Ndigits ZA
 From Minirust.def Require Import ty int_encoding.
 From Minirust.proof.int_raw Require Import mid.
 
+Section high.
+
+Context {params: Params}.
+
 (* roundtrip properties *)
 
 Lemma rt1_int (size: Size) (signedness: Signedness) (int: Int) (H: int_in_range int size signedness = true) :
@@ -78,3 +82,5 @@ try (rewrite R || rewrite R');
 simpl;
 reflexivity.
 Qed.
+
+End high.

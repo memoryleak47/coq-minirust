@@ -3,6 +3,10 @@ Import ListNotations.
 From Minirust.def Require Import ty encoding le.
 From Minirust.proof.lemma Require Import le.
 
+Section wrap_abstract.
+
+Context {params: Params}.
+
 Lemma unwrap_le bl l :
   unwrap_abstract l = Some bl ->
   le (wrap_abstract bl None) l.
@@ -107,3 +111,5 @@ intros A.
 rewrite <- H.
 assumption.
 Qed.
+
+End wrap_abstract.

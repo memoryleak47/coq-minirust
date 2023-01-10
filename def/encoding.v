@@ -3,6 +3,10 @@ Import ListNotations.
 
 From Minirust.def Require Import ty int_encoding utils.
 
+Section encoding.
+
+Context {params: Params}.
+
 Definition Encoder := Ty -> Value -> option (list AbstractByte).
 Definition Decoder := Ty -> list AbstractByte -> option Value.
 
@@ -235,3 +239,5 @@ Fixpoint decode (ty : Ty) (l : list AbstractByte) : option Value :=
  end.
 
 Definition is_valid_for (ty : Ty) (v : Value) := exists l, decode ty l = Some v.
+
+End encoding.

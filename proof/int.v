@@ -7,6 +7,7 @@ From Minirust.proof Require Import defs high.
 
 Section int.
 
+Context {params: Params}.
 Context {size: Size}.
 Context {signedness: Signedness}.
 Notation t := (TInt size signedness).

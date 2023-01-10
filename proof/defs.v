@@ -1,5 +1,9 @@
 From Minirust.def Require Import ty encoding utils thm wf.
 
+Section defs.
+
+Context {params: Params}.
+
 Definition canonicalize ty l := decode ty l >>= encode ty.
 
 Definition encode_len (ty: Ty) :=
@@ -16,3 +20,5 @@ Record Props ty := {
   PR_MONO2 : mono2 ty;
   PR_ENCODE_LEN : encode_len ty
 }.
+
+End defs.

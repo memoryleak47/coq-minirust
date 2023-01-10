@@ -3,6 +3,10 @@ Import ListNotations.
 From Minirust.def Require Import ty encoding le.
 From Minirust.proof.lemma Require Import le wrap_abstract.
 
+Section unique_prov.
+
+Context {params: Params}.
+
 Lemma unique_prov_cons2 {a} {b} {l} {p} (H: unique_prov (a :: b :: l) = Some p) :
   unique_prov (b :: l) = Some p.
 Proof.
@@ -14,30 +18,45 @@ destruct o; cycle 1.
 { discriminate H. }
 
 destruct b.
-{ unfold unique_prov in H. simpl in H. rewrite (proj2 (p_eq p0 p0)) in H. discriminate H. auto. }
+{ unfold unique_prov in H. simpl in H. destruct (P_EQ_REFLECT p0 p0); auto. }
 
 destruct o; cycle 1.
-{ unfold unique_prov in H. simpl in H. rewrite (proj2 (p_eq p0 p0)) in H. discriminate H. auto. }
+{ unfold unique_prov in H. simpl in H. destruct (P_EQ_REFLECT p0 p0); auto. }
 
-destruct (P_EQ p0 p1) eqn:E.
-- rewrite (proj1 (p_eq p0 p1)) in H; cycle 1. { assumption. }
-  unfold unique_prov in H.
-  simpl in H.
-  rewrite (proj2 (p_eq p1 p1)) in H; cycle 1. { auto. }
-  simpl in H.
-  unfold unique_prov.
-  simpl.
-  rewrite (proj2 (p_eq p1 p1)); cycle 1. { auto. }
-  simpl. assumption.
+destruct (P_EQ_REFLECT p0 p1).
 - unfold unique_prov in H.
   simpl in H.
-  rewrite (proj2 (p_eq p0 p0)) in H; cycle 1. { auto. }
-  assert (p0 <> p1).
-  { apply p_eq_false. assumption. }
-  rewrite (proj2 (p_eq_false p1 p0)) in H; cycle 1.
-  { auto. }
+  destruct (P_EQ_REFLECT p0 p0); cycle 1.
+  { exfalso. apply n. auto. }
+
+  destruct (P_EQ_REFLECT p1 p0); cycle 1.
+  { simpl in H. discriminate H. }
+
   simpl in H.
-  discriminate H.
+  unfold unique_prov.
+  rewrite <- H.
+  simpl.
+  f_equal; try auto.
+
+  destruct (P_EQ_REFLECT p1 p1); cycle 1.
+  { exfalso. apply n. auto. }
+
+  simpl.
+  rewrite <- e.
+  auto.
+- unfold unique_prov in H.
+  simpl in H.
+
+  destruct (P_EQ_REFLECT p0 p0); cycle 1.
+  { exfalso. apply n0. auto. }
+
+  destruct (P_EQ_REFLECT p1 p0); cycle 1.
+  { simpl in H. discriminate H. }
+
+  simpl in H.
+  exfalso.
+  apply n.
+  auto.
 Qed.
 
 Lemma unique_le {l1 l2: list AbstractByte} (Hle: le l1 l2) p (H: unique_prov l1 = Some p) :
@@ -79,7 +98,7 @@ unfold unique_prov.
 simpl.
 destruct p.
 - simpl.
-  rewrite (proj2 (p_eq p p)); auto.
+  destruct (P_EQ_REFLECT p p); auto.
 - simpl. auto.
 Qed.
 
@@ -96,7 +115,9 @@ induction l as [|b l IH].
    simpl.
    destruct p.
 --- simpl.
-    rewrite (proj2 (p_eq p p)); auto.
+    destruct (P_EQ_REFLECT p p); auto.
+    contradict n.
+    auto.
 --- simpl. auto.
 -- simpl.
    simpl in IH.
@@ -180,3 +201,5 @@ apply IH.
 --- simpl. simpl in H. inversion H. auto.
 --- simpl in H. discriminate H.
 Qed.
+
+End unique_prov.

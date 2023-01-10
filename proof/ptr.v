@@ -7,6 +7,7 @@ From Minirust.proof Require Import defs high int.
 
 Section ptr.
 
+Context {params: Params}.
 Context [layout: Layout].
 
 Notation align := (
@@ -62,7 +63,7 @@ assert (length l0 = PTR_SIZE). {
 }
 
 split. {
-  destruct (rt2_int PTR_SIZE Unsigned l0 H ptr_size_gt0) as (i' & B & C & D).
+  destruct (rt2_int PTR_SIZE Unsigned l0 H PTR_SIZE_GT0) as (i' & B & C & D).
   assert (i = i'). {
     rewrite <- B in Hidec. inversion Hidec. auto.
   }
@@ -112,7 +113,9 @@ induction l as [|b l IH].
 simpl.
 split.
 - destruct p,p'; repeat (split || reflexivity || simpl in Hle).
--- inversion Hle. apply (proj1 (p_eq p p0)). assumption.
+-- inversion Hle.
+   destruct (P_EQ_REFLECT p p0); auto.
+   discriminate H0.
 -- inversion Hle. assumption.
 - apply IH.
 Qed.
@@ -150,7 +153,7 @@ split. { auto. }
 
 destruct (unique_prov l1) eqn:E; cycle 1. { trivial. }
 rewrite (unique_le Hle p).
-- apply (proj2 (p_eq p p)). auto.
+- destruct (P_EQ_REFLECT p p); auto.
 - assumption.
 Qed.
 
@@ -178,7 +181,7 @@ destruct (Nat.eq_dec (length bl) PTR_SIZE) eqn:E; cycle 1.
 { rewrite decode_int_none in Hdec; try assumption. discriminate Hdec. }
 
 assert (length bl > 0) as H.
-{ rewrite e. apply ptr_size_gt0. }
+{ rewrite e. apply PTR_SIZE_GT0. }
 
 rewrite (unique_wrap H).
 
@@ -208,7 +211,7 @@ destruct v; try discriminate Henc.
 destruct (int_in_range a PTR_SIZE Unsigned) eqn:E; cycle 1.
 { rewrite (encode_int_none E) in Henc. discriminate Henc. }
 
-destruct (rt1_int PTR_SIZE Unsigned a E ptr_size_gt0) as (bl' & Hbl' & _ & Out).
+destruct (rt1_int PTR_SIZE Unsigned a E PTR_SIZE_GT0) as (bl' & Hbl' & _ & Out).
 rewrite <- Hbl' in Henc.
 simpl in Henc.
 inversion Henc.

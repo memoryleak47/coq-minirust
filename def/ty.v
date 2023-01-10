@@ -9,24 +9,19 @@ Inductive Endianness :=
 Definition Size := nat.
 Definition Align := nat.
 
-(* This makes the `Context` variables globally accessible. *)
-Context `{ENDIANNESS_impl : Endianness}.
-Definition ENDIANNESS := ENDIANNESS_impl.
+(* This is a `Class` and no `Record` so that arguments are resolved automatically *)
+Class Params := {
+  PTR_SIZE : Size;
+  ENDIANNESS : Endianness;
+  P : Type; (* provenance *)
+  P_EQ : P -> P -> bool;
+  P_EQ_REFLECT : forall x y, Bool.reflect (x = y) (P_EQ x y);
+  PTR_SIZE_GT0 : PTR_SIZE > 0;
+}.
 
-(* provenance *)
-Context `{P_impl : Type}.
-Definition P := P_impl.
+Section ty.
 
-Context `{PTR_SIZE_impl : Size}.
-Definition PTR_SIZE := PTR_SIZE_impl.
-
-Axiom ptr_size_gt0 : PTR_SIZE > 0.
-
-Context `{P_EQ_impl : P -> P -> bool}.
-Definition P_EQ := P_EQ_impl.
-
-Axiom p_eq : forall (p q: P), (P_EQ p q) = true <-> p = q.
-Axiom p_eq_false : forall (p q : P), (P_EQ p q) = false <-> p <> q.
+Context {params: Params}.
 
 Definition Int := Z.
 
@@ -79,3 +74,5 @@ Fixpoint ty_size (t: Ty) : Size :=
     (ty_size elem) * count
   | TUnion _ _ s => s
   end.
+
+End ty.

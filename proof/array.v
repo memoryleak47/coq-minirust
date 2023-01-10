@@ -7,6 +7,7 @@ From Minirust.proof.lemma Require Import le utils canonicalize chunks.
 
 Section array.
 
+Context {params: Params}.
 Context [elem_ty: Ty].
 Context [count: Int].
 

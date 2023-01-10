@@ -4,6 +4,10 @@ Import ListNotations.
 From Minirust.def Require Import ty encoding thm wf.
 From Minirust.proof Require Import defs lemma.le.
 
+Section bool.
+
+Context {params: Params}.
+
 Inductive BoolCases1 : list AbstractByte -> Type :=
   | BC1True (p: option P) : BoolCases1 [Init x01 p]
   | BC1False (p: option P) : BoolCases1 [Init x00 p]
@@ -114,3 +118,5 @@ split.
 - apply bool_mono2.
 - apply bool_encode_len.
 Qed.
+
+End bool.

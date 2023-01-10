@@ -3,6 +3,10 @@ Import ListNotations.
 
 From Minirust.def Require Import ty utils.
 
+Section int_encoding.
+
+Context {params: Params}.
+
 (* fundamentals *)
 
 Definition int_start (size: Size) (signedness: Signedness) : Int :=
@@ -94,3 +98,5 @@ Definition decode_int_raw (size: Size) (signedness: Signedness) (l: list byte) :
     end in
 
   decode_int_le size signedness l.
+
+End int_encoding.

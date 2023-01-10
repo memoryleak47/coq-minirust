@@ -2,6 +2,10 @@ From Minirust.def Require Import ty le.
 Require Import Datatypes Coq.Init.Byte List.
 Import ListNotations.
 
+Section le.
+
+Context {params: Params}.
+
 Inductive LeAbstractByte : AbstractByte -> AbstractByte -> Type :=
   | LUninit b : LeAbstractByte Uninit b
   | LNoProv x o : LeAbstractByte (Init x None) (Init x o)
@@ -83,9 +87,7 @@ destruct v eqn:E.
   simpl;
   split;
   auto.
-  apply (proj2 (p_eq p p)).
-  reflexivity.
-
+  destruct (P_EQ_REFLECT p p); auto.
 - generalize dependent v.
   induction l as [|t l IH].
 -- simpl. trivial.
@@ -107,3 +109,5 @@ Lemma le_list_step {x1 x2 : AbstractByte} {l1 l2} : le (x1 :: l1) (x2 :: l2) = (
 Proof.
 auto.
 Qed.
+
+End le.
