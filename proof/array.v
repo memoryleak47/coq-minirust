@@ -1,7 +1,7 @@
 Require Import Lia Coq.Init.Byte FunctionalExtensionality NArith ZArith List Ndigits NArith ssrbool.
 Import ListNotations.
 
-From Minirust.def Require Import ty encoding thm utils wf.
+From Minirust.def Require Import ty encoding thm utils wf le.
 From Minirust.proof Require Import defs.
 From Minirust.proof.lemma Require Import le utils canonicalize chunks.
 
@@ -311,12 +311,125 @@ inversion Htr_enc.
 auto.
 Qed.
 
+
+Lemma array_mono1_helper [vs1 vs2 ll1 ll2 a1 a2]
+  (Hle: le_list Value vs1 vs2 le)
+  (Htr_enc1 : transpose (map (encode elem_ty) vs1) = Some ll1)
+  (Htr_enc2 : transpose (map (encode elem_ty) vs2) = Some ll2)
+  (Htr_dec1 : transpose (map (decode elem_ty) a1) = Some vs1)
+  (Htr_dec2 : transpose (map (decode elem_ty) a2) = Some vs2)
+  : Forall (fun x => le (fst x) (snd x)) (combine ll1 ll2).
+Proof.
+generalize dependent ll2.
+generalize dependent vs1.
+generalize dependent vs2.
+generalize dependent a1.
+generalize dependent a2.
+
+induction ll1 as [|x1 ll1 IH].
+{ intros. apply Forall_nil. }
+
+intros.
+destruct ll2 as [|x2 ll2].
+{ apply Forall_nil. }
+
+simpl (combine _ _).
+
+destruct vs1 as [|v1 vs1].
+{ have A (transpose_len Htr_enc1). simpl in A. discriminate A. }
+
+destruct vs2 as [|v2 vs2].
+{ have A (transpose_len Htr_enc2). simpl in A. discriminate A. }
+
+apply Forall_cons. {
+  simpl (fst _).
+  simpl (snd _).
+  assert (le v1 v2) as Hle12.
+  { inversion Hle. auto. }
+  assert (encode elem_ty v1 = Some x1) as He1.
+  { simpl in Htr_enc1. destruct (encode elem_ty v1); try discriminate Htr_enc1.
+    simpl in Htr_enc1. destruct (transpose (map (encode elem_ty) vs1)); try discriminate Htr_enc1.
+    simpl in Htr_enc1. inversion Htr_enc1. auto. }
+  assert (encode elem_ty v2 = Some x2) as He2.
+  { simpl in Htr_enc2. destruct (encode elem_ty v2); try discriminate Htr_enc2.
+    simpl in Htr_enc2. destruct (transpose (map (encode elem_ty) vs2)); try discriminate Htr_enc2.
+    simpl in Htr_enc2. inversion Htr_enc2. auto. }
+  assert (is_valid_for elem_ty v1). {
+    destruct a1. { simpl in Htr_dec1. discriminate Htr_dec1. }
+    simpl in Htr_dec1. destruct (decode elem_ty l) eqn:E; try discriminate Htr_dec1.
+    destruct (transpose (map (decode elem_ty) a1)); try discriminate Htr_dec1.
+    simpl in Htr_dec1.
+    inversion Htr_dec1.
+    rewrite <- H0.
+    exists l.
+    auto.
+  }
+  assert (is_valid_for elem_ty v2). {
+    destruct a2. { simpl in Htr_dec2. discriminate Htr_dec2. }
+    simpl in Htr_dec2. destruct (decode elem_ty l) eqn:E; try discriminate Htr_dec2.
+    destruct (transpose (map (decode elem_ty) a2)); try discriminate Htr_dec2.
+    simpl in Htr_dec2.
+    inversion Htr_dec2.
+    rewrite <- H1.
+    exists l.
+    auto.
+  }
+  destruct (PR_MONO1 elem_ty elem_props v1 v2 Hle12 H H0) as (b1 & b2 & Heb1 & Heb2 & Hleb).
+  rewrite He1 in Heb1. inversion Heb1.
+  rewrite He2 in Heb2. inversion Heb2.
+  auto.
+}
+
+destruct a1 as [|a1_ a1]. { simpl in Htr_dec1. discriminate Htr_dec1. }
+destruct a2 as [|a2_ a2]. { simpl in Htr_dec2. discriminate Htr_dec2. }
+
+refine (IH a2 a1 vs2 _ vs1 _ _ _ ll2 _).
+- clear - Htr_dec2.
+  simpl in Htr_dec2.
+  destruct (decode elem_ty a2_); cycle 1. { discriminate Htr_dec2. }
+  destruct (transpose (map (decode elem_ty) a2)); cycle 1. { discriminate Htr_dec2. }
+  inversion Htr_dec2.
+  auto.
+- clear - Hle.
+  inversion Hle.
+  auto.
+- clear - Htr_enc1.
+  simpl in Htr_enc1.
+  destruct (encode elem_ty v1); cycle 1. { discriminate Htr_enc1. }
+  destruct (transpose (map (encode elem_ty) vs1)); cycle 1. { discriminate Htr_enc1. }
+  inversion Htr_enc1.
+  auto.
+- clear - Htr_dec1.
+  simpl in Htr_dec1.
+  destruct (decode elem_ty a1_); cycle 1. { discriminate Htr_dec1. }
+  destruct (transpose (map (decode elem_ty) a1)); cycle 1. { discriminate Htr_dec1. }
+  inversion Htr_dec1.
+  auto.
+- clear - Htr_enc2.
+  simpl in Htr_enc2.
+  destruct (encode elem_ty v2); cycle 1. { discriminate Htr_enc2. }
+  destruct (transpose (map (encode elem_ty) vs2)); cycle 1. { discriminate Htr_enc2. }
+  inversion Htr_enc2.
+  auto.
+Qed.
+
 Lemma array_mono1 : mono1 t.
 Proof.
-Admitted.
+intros v1 v2 Hle Hval1 Hval2.
+destruct (Hval1) as [l1 Hdec1].
+destruct (Hval2) as [l2 Hdec2].
+destruct (array_dec Hdec1) as (vs1 & -> & Hlen_l1 & Htr_dec1 & Hlen_vs1 & ll1 & Htr_enc1 & Hlen_ll1 & Hlen_inner_ll1 & Henc1).
+destruct (array_dec Hdec2) as (vs2 & -> & Hlen_l2 & Htr_dec2 & Hlen_vs2 & ll2 & Htr_enc2 & Hlen_ll2 & Hlen_inner_ll2 & Henc2).
+exists (concat ll1), (concat ll2).
+split. { auto. }
+split. { auto. }
+
+apply concat_le. { lia. }
+simpl in Hval1.
+apply (array_mono1_helper Hle Htr_enc1 Htr_enc2 Htr_dec1 Htr_dec2).
+Qed.
 
 Lemma array_mono2 : mono2 t.
-Proof.
 Admitted.
 
 Lemma array_encode_len : encode_len t.
