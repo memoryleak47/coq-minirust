@@ -105,20 +105,28 @@ apply le_option_gen_refl.
 apply le_val_refl.
 Qed.
 
-Lemma le_list_step {x1 x2 : AbstractByte} {l1 l2} : le (x1 :: l1) (x2 :: l2) = (le x1 x2 /\ le l1 l2).
+Lemma le_list_step {T} {x1 x2 : T} {_: DefinedRelation T} {l1 l2} : le (x1 :: l1) (x2 :: l2) = (le x1 x2 /\ le l1 l2).
 Proof.
 auto.
 Qed.
 
-Lemma le_len {l1 l2 : list AbstractByte} (H: le l1 l2)
+Lemma le_len [T] {l1 l2 : list T} {_: DefinedRelation T} (H: le l1 l2)
   : length l1 = length l2.
 Proof.
-induction (mk_le_list _ _ H). { auto. }
+generalize dependent l2.
+
+induction l1 as [|x1 l1 IH].
+{ intros. simpl in H. destruct l2; auto. contradict H. }
+
+intros.
+destruct l2.
+{ contradict H. }
 
 simpl.
 f_equal.
-apply IHl.
-apply (proj2 l1).
+apply IH.
+inversion H.
+auto.
 Qed.
 
 End le.

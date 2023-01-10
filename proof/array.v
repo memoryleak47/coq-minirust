@@ -430,11 +430,38 @@ apply (array_mono1_helper Hle Htr_enc1 Htr_enc2 Htr_dec1 Htr_dec2).
 Qed.
 
 Lemma map_dec_le [cl1 cl2: list (list AbstractByte)]
-  (Hlen1 : length cl1 = Z.to_nat count /\ Forall (fun x => length x = ty_size elem_ty) cl1)
-  (Hlen2 : length cl2 = Z.to_nat count /\ Forall (fun x => length x = ty_size elem_ty) cl2)
+  (Hlen_eq : length cl1 = length cl2)
+  (Hlen1 : Forall (fun x => length x = ty_size elem_ty) cl1)
+  (Hlen2 : Forall (fun x => length x = ty_size elem_ty) cl2)
   (Hle: le cl1 cl2) :
   le (map (decode elem_ty) cl1) (map (decode elem_ty) cl2).
-Admitted.
+Proof.
+generalize dependent cl2.
+induction cl1 as [|x1 cl1 IH]. {
+  intros.
+  simpl in Hle.
+  destruct cl2; cycle 1. { contradict Hle. }
+  auto.
+}
+
+intros.
+destruct cl2 as [|x2 cl2].
+{ simpl in Hle. contradict Hle. }
+simpl (map _ _).
+rewrite (le_list_step).
+split. {
+  assert (le x1 x2). { inversion Hle. auto. }
+  apply (PR_MONO2 elem_ty elem_props x1 x2 H).
+}
+
+assert (le cl1 cl2).
+{ inversion Hle. auto. }
+apply IH.
+- inversion Hlen1. auto.
+- apply (le_len H).
+- inversion Hlen2. auto.
+- auto.
+Qed.
 
 Lemma array_mono2_helper [l1 l2: list AbstractByte] [vs1]
   (Hle: le l1 l2)
@@ -451,8 +478,12 @@ set (m2 := map (decode elem_ty) cl2).
 
 assert (le cl1 cl2).
 { apply (chunks_le Hle Hlen1 Hlen2). }
-assert (le m1 m2).
-{ apply (map_dec_le (chunks_len Hlen1) (chunks_len Hlen2) H). }
+assert (le m1 m2). {
+  destruct (chunks_len Hlen1).
+  destruct (chunks_len Hlen2).
+  refine (map_dec_le _ _ _ H); auto.
+  unfold cl1,cl2. lia.
+}
 assert (le (transpose m1) (transpose m2)).
 { apply transpose_le. auto. }
 
