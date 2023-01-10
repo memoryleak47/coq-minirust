@@ -145,7 +145,7 @@ rewrite skipn_length.
 lia.
 Qed.
 
-Lemma cons_le [x1 x2: AbstractByte] [l1 l2 : list AbstractByte]
+Lemma cons_le [T] [x1 x2: T] [l1 l2 : list T] [_: DefinedRelation T]
   (Hlex: le x1 x2)
   (Hlel : le l1 l2) :
   le (x1::l1) (x2::l2).
@@ -214,12 +214,76 @@ inversion H.
 auto.
 Qed.
 
+Lemma firstn_le n [T] [l1 l2: list T] {_: DefinedRelation T} (Hle: le l1 l2) :
+  le (firstn n l1) (firstn n l2).
+Proof.
+generalize dependent l2.
+generalize dependent n.
+induction l1 as [|x1 l1 IH]. {
+  intros.
+  rewrite firstn_nil.
+  destruct l2.
+  - rewrite firstn_nil. auto.
+  - contradict Hle.
+}
+
+intros.
+destruct l2.
+{ contradict Hle. }
+
+destruct n.
+{ simpl. auto. }
+
+simpl (firstn _ _).
+apply cons_le.
+- inversion Hle. auto.
+- apply IH.
+  inversion Hle.
+  auto.
+Qed.
+
+Lemma skipn_le n [T] [l1 l2: list T] {_: DefinedRelation T} (Hle: le l1 l2) :
+  le (skipn n l1) (skipn n l2).
+Proof.
+generalize dependent l2.
+generalize dependent n.
+induction l1 as [|x1 l1 IH]. {
+  intros.
+  destruct l2.
+  - rewrite skipn_nil. auto.
+  - contradict Hle.
+}
+
+intros.
+destruct l2.
+{ contradict Hle. }
+
+destruct n.
+{ simpl (skipn 0 _). auto. }
+
+simpl skipn.
+inversion Hle.
+auto.
+Qed.
+
 Lemma chunks_le [c s] [l1 l2: list AbstractByte]
   (Hle: le l1 l2)
   (Hlen1 : length l1 = c * s)
   (Hlen2 : length l2 = c * s):
  le (chunks c s l1) (chunks c s l2).
 Proof.
-Admitted.
+generalize dependent l1.
+generalize dependent l2.
+induction c as [|c IH].
+{ intros. simpl in Hlen1. destruct l1; try discriminate Hlen1. simpl. auto. }
+
+intros.
+do 2 rewrite chunks_step.
+apply cons_le. { apply firstn_le. auto. }
+apply IH.
+- rewrite skipn_length. lia.
+- apply skipn_le. auto.
+- rewrite skipn_length. lia.
+Qed.
 
 End chunks.
