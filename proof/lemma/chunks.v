@@ -145,10 +145,73 @@ rewrite skipn_length.
 lia.
 Qed.
 
+Lemma cons_le [x1 x2: AbstractByte] [l1 l2 : list AbstractByte]
+  (Hlex: le x1 x2)
+  (Hlel : le l1 l2) :
+  le (x1::l1) (x2::l2).
+Proof.
+unfold le. unfold list_DefinedRelation. unfold le_list.
+split; auto.
+Qed.
+
+Lemma cons_le_rev [x1 x2 : AbstractByte] [l1 l2 : list AbstractByte] (Hle: le (x1::l1) (x2::l2)) :
+  (le x1 x2) /\ (le l1 l2).
+Proof.
+split; inversion Hle; auto.
+Qed.
+
+Lemma app_le [l1 l2 l1' l2' : list AbstractByte]
+  (Hle: le l1 l2)
+  (Hle': le l1' l2'):
+  le (l1 ++ l1') (l2 ++ l2').
+Proof.
+generalize dependent l2.
+generalize dependent l2'.
+generalize dependent l1'.
+induction l1 as [|x1 l1 IH]. {
+  intros.
+  simpl in Hle.
+  simpl ([] ++ _).
+  destruct l2. { auto. }
+  contradiction Hle.
+}
+
+intros.
+destruct l2 as [|x2 l2].
+{ simpl in Hle. contradiction Hle. }
+
+do 2 rewrite <- app_comm_cons.
+destruct (cons_le_rev Hle).
+apply cons_le. { auto. }
+apply IH; auto.
+Qed.
+
 Lemma concat_le [l1 l2: list (list AbstractByte)]
   (Hl: length l1 = length l2)
   (H: Forall (fun x => le (fst x) (snd x)) (combine l1 l2)) :
  le (concat l1) (concat l2).
-Admitted.
+Proof.
+generalize dependent l2.
+induction l1 as [|x1 l1 IH].
+{ intros. simpl. destruct l2; simpl; auto. discriminate Hl. }
+
+intros.
+destruct l2 as [|x2 l2].
+{ discriminate Hl. }
+
+simpl (concat _).
+apply app_le. {
+  simpl (combine _ _) in H.
+  inversion H.
+  simpl in H2.
+  auto.
+}
+
+apply IH.
+{ simpl in Hl. inversion Hl. auto. }
+
+inversion H.
+auto.
+Qed.
 
 End chunks.
