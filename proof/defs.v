@@ -3,13 +3,13 @@ From Minirust.def Require Import ty encoding utils thm wf.
 Definition canonicalize ty l := decode ty l >>= encode ty.
 
 Definition encode_len (ty: Ty) :=
-  wf ty ->
   forall v, forall l,
   encode ty v = Some l ->
   length l = ty_size ty.
 
-(* will be extended by helper properties satisfied by all well-formed types *)
+(* relevant properties satisfied by all well-formed types *)
 Record Props ty := {
+  PR_WF : wf ty;
   PR_RT1 : rt1 ty;
   PR_RT2 : rt2 ty;
   PR_MONO1 : mono1 ty;

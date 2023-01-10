@@ -5,6 +5,13 @@ From Minirust.def Require Import ty encoding thm wf int_encoding le.
 From Minirust.proof.lemma Require Import unique_prov wrap_abstract utils le.
 From Minirust.proof Require Import defs high.
 
+Section int.
+
+Context {size: Size}.
+Context {signedness: Signedness}.
+Notation t := (TInt size signedness).
+Context (Hwf: wf t).
+
 Lemma pow_pos (x: nat) : pow2 x > 0.
 Proof.
 induction x as [|x IH];
@@ -12,7 +19,7 @@ simpl;
 lia.
 Qed.
 
-Lemma wf_int {size: Size} {signedness: Signedness} (Hwf: wf (TInt size signedness)) :
+Lemma wf_int :
   size > 0.
 Proof.
 simpl in Hwf.
@@ -29,18 +36,18 @@ simpl in H. inversion H.
 reflexivity.
 Qed.
 
-Inductive IntPair : Size -> Signedness -> Value -> list AbstractByte -> Prop :=
- | mkIntPair {size: Size} {signedness: Signedness} {i: Int} {l: list AbstractByte} {bl: list byte} :
+Inductive IntPair : Value -> list AbstractByte -> Prop :=
+ | mkIntPair {i: Int} {l: list AbstractByte} {bl: list byte} :
   unwrap_abstract l = Some bl -> length l = size -> length bl = size -> int_in_range i size signedness = true ->
-  (decode (TInt size signedness) l = Some (VInt i)) -> ((encode (TInt size signedness) (VInt i)) = Some (wrap_abstract bl None)) -> IntPair size signedness (VInt i) l.
+  (decode t l = Some (VInt i)) -> ((encode t (VInt i)) = Some (wrap_abstract bl None)) -> IntPair (VInt i) l.
 
-Lemma encode_int_pair {size: Size} {signedness: Signedness} {v: Value} {l: list AbstractByte} (H: encode (TInt size signedness) v = Some l) :
+Lemma encode_int_pair {v: Value} {l: list AbstractByte} (H: encode t v = Some l) :
   (size > 0) ->
-  IntPair size signedness v l.
+  IntPair v l.
 Proof.
 intros Hs.
 (* storing this equation for later, H will be manipulated *)
-assert (encode (TInt size signedness) v = Some l) as Henc. { exact H. }
+assert (encode t v = Some l) as Henc. { exact H. }
 unfold encode,encode_int in H.
 destruct v; try discriminate H.
 simpl in H.
@@ -58,8 +65,8 @@ assert (length (wrap_abstract bl None) = size). {
   rewrite wrap_len. assumption.
 }
 
-declare d Hd (decode (TInt size signedness) (wrap_abstract bl None)).
-assert (decode (TInt size signedness) (wrap_abstract bl None) = d) as Hd'. { assumption. }
+declare d Hd (decode t (wrap_abstract bl None)).
+assert (decode t (wrap_abstract bl None) = d) as Hd'. { assumption. }
 unfold decode,decode_int in Hd.
 rewrite unwrap_wrap in Hd. simpl in Hd.
 rewrite H2 in Hd. simpl in Hd.
@@ -70,15 +77,14 @@ assert (unwrap_abstract l = Some bl) as F. {
   rewrite unwrap_wrap. reflexivity.
 }
 rewrite Hlbl in H0,Hd'.
-apply (@mkIntPair size signedness i l bl F H0 H3 HR Hd' Henc).
+apply (@mkIntPair i l bl F H0 H3 HR Hd' Henc).
 Qed.
 
-Lemma decode_int_pair {size: Size} {signedness: Signedness} {v: Value} {l: list AbstractByte} (Hdec: decode (TInt size signedness) l = Some v) :
+Lemma decode_int_pair {v: Value} {l: list AbstractByte} (Hdec: decode t l = Some v) :
   (size > 0) ->
-  IntPair size signedness v l.
+  IntPair v l.
 Proof.
 intros Hs.
-set (t := TInt size signedness).
 assert (decode t l = Some v) as Hdec'. { assumption. }
 unfold decode,decode_int in Hdec.
 destruct (unwrap_abstract l) as [bl|] eqn:Hbl; cycle 1. {
@@ -115,9 +121,9 @@ simpl.
 rewrite H2. simpl. f_equal.
 Qed.
 
-Lemma valid_int {size: Size} {signedness: Signedness} {v: Value} (H: is_valid_for (TInt size signedness) v) :
+Lemma valid_int {v: Value} (H: is_valid_for t v) :
   (size > 0) ->
-  exists (l: list AbstractByte), IntPair size signedness v l.
+  exists (l: list AbstractByte), IntPair v l.
 Proof.
 intros Hs.
 unfold is_valid_for in H.
@@ -127,10 +133,10 @@ exists l.
 apply (mkIntPair H0 H1 H2 H3 H4 H5).
 Qed.
 
-Lemma int_mono1 (size: Size) (signedness: Signedness) : mono1 (TInt size signedness).
+Lemma int_mono1 : mono1 t.
 Proof.
-intros Hwf v1 v2 Hle Hval1 Hval2.
-set (Hs := wf_int Hwf).
+intros v1 v2 Hle Hval1 Hval2.
+set (Hs := wf_int).
 
 destruct (valid_int Hval1) as [l1 P1]. apply Hs.
 destruct P1.
@@ -144,10 +150,10 @@ apply unwrap_le.
 apply unwrap_wrap.
 Qed.
 
-Lemma int_mono2 (size: Size) (signedness: Signedness) : mono2 (TInt size signedness).
+Lemma int_mono2 : mono2 t.
 Proof.
-intros Hwf l1 l2 Hle.
-have Hs (wf_int Hwf).
+intros l1 l2 Hle.
+have Hs (wf_int).
 destruct (unwrap_abstract l1) eqn:E.
 - have H (unwrap_le_some Hle E).
   unfold decode,decode_int. rewrite E,H.
@@ -157,10 +163,10 @@ destruct (unwrap_abstract l1) eqn:E.
   trivial.
 Qed.
 
-Lemma int_rt1 (size: Size) (signedness: Signedness) : rt1 (TInt size signedness).
+Lemma int_rt1 : rt1 t.
 Proof.
-intros Hwf v Hval.
-set (Hs := wf_int Hwf).
+intros v Hval.
+set (Hs := wf_int).
 destruct (valid_int Hval) as [l A]. { apply Hs. }
 destruct A.
 simpl. unfold encode_int.
@@ -195,10 +201,10 @@ split.
   reflexivity.
 Qed.
 
-Lemma int_rt2 (size: Size) (signedness: Signedness) : rt2 (TInt size signedness).
+Lemma int_rt2 : rt2 t.
 Proof.
-intros Hwf l v.
-set (Hs := wf_int Hwf).
+intros l v.
+set (Hs := wf_int).
 intros Hdec.
 destruct (decode_int_pair Hdec). { apply Hs. }
 
@@ -227,20 +233,23 @@ split.
   assumption.
 Qed.
 
-Lemma int_encode_len {size: Size} {signedness: Signedness} : encode_len (TInt size signedness).
-intros Hwf v l Henc.
+Lemma int_encode_len : encode_len t.
+intros v l Henc.
 destruct (encode_int_pair Henc).
-{ apply (wf_int Hwf). }
+{ apply (wf_int). }
 
 assumption.
 Qed.
 
-Lemma int_props {size: Size} {signedness: Signedness} : Props (TInt size signedness).
+Lemma int_props : Props t.
 Proof.
 split.
+- auto.
 - apply int_rt1.
 - apply int_rt2.
 - apply int_mono1.
 - apply int_mono2.
 - apply int_encode_len.
 Qed.
+
+End int.

@@ -7,26 +7,28 @@ From Minirust.proof.lemma Require Import le utils canonicalize chunks.
 
 Section array.
 
-Context {elem_ty: Ty}.
-Context {count: Int}.
+Context [elem_ty: Ty].
+Context [count: Int].
 
-Context (elem_props : Props elem_ty).
+Context (props_IH : wf elem_ty -> Props elem_ty).
 
 Notation t := (TArray elem_ty count).
+Context (Hwf: wf t).
 
-Lemma elem_ty_wf (Hwf: wf t): wf elem_ty.
+Lemma elem_ty_wf : wf elem_ty.
 Proof. inversion Hwf. inversion H0. auto. Qed.
 
-Lemma non_neg_count (Hwf: wf t) : (count >= 0)%Z.
+Definition elem_props := props_IH elem_ty_wf.
+
+Lemma non_neg_count : (count >= 0)%Z.
 Proof. inversion Hwf. inversion H0. auto. Qed.
 
-Lemma encode_elem_len {v l} (Hwf: wf t) (H: encode elem_ty v = Some l) : length l = ty_size elem_ty.
+Lemma encode_elem_len {v l} (H: encode elem_ty v = Some l) : length l = ty_size elem_ty.
 Proof.
-apply (PR_ENCODE_LEN elem_ty elem_props (elem_ty_wf Hwf) _ _ H).
+apply (PR_ENCODE_LEN elem_ty elem_props _ _ H).
 Qed.
 
 Lemma encode_tr {vs ll orig_ll}
-  (Hwf: wf t)
   (Hdec: transpose (map (decode elem_ty) orig_ll) = Some vs)
   (H: transpose (map (encode elem_ty) vs) = Some ll) :
   transpose (map (fun x : Value => encode elem_ty x >>= decode elem_ty) vs) = Some vs.
@@ -62,7 +64,7 @@ assert (is_valid_for elem_ty v). {
   assumption.
 }
 
-destruct (PR_RT1 elem_ty elem_props (elem_ty_wf Hwf) v H) as (x' & Henc' & Hdec').
+destruct (PR_RT1 elem_ty elem_props v H) as (x' & Henc' & Hdec').
 simpl.
 rewrite Henc'.
 simpl.
@@ -104,16 +106,15 @@ Qed.
 
 
 Lemma canon_transpose_len {cl ll}
-  (Hwf: wf t)
   (A: transpose (map (canonicalize elem_ty) cl) = Some ll) :
   Forall (fun x => length x = ty_size elem_ty) ll.
 Proof.
 apply (transpose_map_Forall A).
 intros x y Hcan.
-apply (canonicalize_len elem_ty elem_props (elem_ty_wf Hwf) Hcan).
+apply (canonicalize_len elem_props Hcan).
 Qed.
 
-Lemma encode_elim_len_check (Hwf: wf t) :
+Lemma encode_elim_len_check :
   (fun x => encode elem_ty x >>=
   (fun t : list AbstractByte =>
     if length t =? ty_size elem_ty
@@ -126,13 +127,13 @@ Proof.
   { simpl. auto. }
 
   simpl.
-  rewrite (encode_elem_len Hwf Hx).
+  rewrite (encode_elem_len Hx).
   rewrite Nat.eqb_refl.
   auto.
 Qed.
 
 (* this already proves that the resulting value `v` can be encoded again *)
-Lemma array_dec {l v} (Hwf: wf t) (Hdec: decode t l = Some v) :
+Lemma array_dec {l v} (Hdec: decode t l = Some v) :
 exists vs, v = VTuple vs
 /\ (Z.of_nat (length l) = Z.of_nat (ty_size elem_ty) * count)%Z
 /\ transpose (map (decode elem_ty) (chunks (Z.to_nat count) (ty_size elem_ty) l)) = Some vs
@@ -167,7 +168,7 @@ unfold encode_array.
 simpl.
 
 unfold assuming.
-assert (count >= 0)%Z as Hnnc. { apply (non_neg_count Hwf). }
+assert (count >= 0)%Z as Hnnc. { apply non_neg_count. }
 destruct ((Z.of_nat (length tr_v) =? count)%Z) eqn:Hl; cycle 1. {
   assert (Z.of_nat (length tr_v) = count)%Z; cycle 1. { lia. }
   assert (length l = ty_size elem_ty * Z.to_nat count). { lia. }
@@ -183,13 +184,13 @@ split. { lia. }
 
 simpl.
 
-rewrite (encode_elim_len_check Hwf).
+rewrite encode_elim_len_check.
 
 rewrite (transpose_map Htr).
 replace (fun x => decode elem_ty x >>= encode elem_ty) with (canonicalize elem_ty); cycle 1.
 { unfold canonicalize. auto. }
 
-destruct (canonicalize_lemma2 elem_ty elem_props (elem_ty_wf Hwf) Htr) as [ll Hll].
+destruct (canonicalize_lemma2 elem_props Htr) as [ll Hll].
 rewrite Hll.
 simpl.
 exists ll.
@@ -206,15 +207,15 @@ split. {
   lia.
 }
 
-exists (canon_transpose_len Hwf Hll).
+exists (canon_transpose_len Hll).
 auto.
 Qed.
 
 Lemma array_rt1 : rt1 t.
 Proof.
-intros Hwf v Hval.
+intros v Hval.
 destruct Hval as [l Hdec].
-destruct (array_dec Hwf Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Hlen_ll & Hlen_inner_ll & Henc).
+destruct (array_dec Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Hlen_ll & Hlen_inner_ll & Henc).
 exists (concat ll).
 split. { assumption. }
 
@@ -223,7 +224,7 @@ unfold decode_array.
 assert (length ll = Z.to_nat count) as Hlen_ll'. { lia. }
 rewrite (chunks_concat Hlen_ll' Hlen_inner_ll).
 rewrite (transpose_map Htr_enc).
-rewrite (encode_tr Hwf Htr_dec Htr_enc).
+rewrite (encode_tr Htr_dec Htr_enc).
 simpl.
 assert (length ll = Z.to_nat count). { lia. }
 rewrite (concat_len H Hlen_inner_ll).
@@ -237,8 +238,8 @@ Qed.
 
 Lemma array_rt2 : rt2 t.
 Proof.
-intros Hwf l v Hdec.
-destruct (array_dec Hwf Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Hlen_ll & Hlen_inner_ll & Henc).
+intros l v Hdec.
+destruct (array_dec Hdec) as (vs & -> & Hlen_l & Htr_dec & Hlen_vs & ll & Htr_enc & Hlen_ll & Hlen_inner_ll & Henc).
 exists (concat ll).
 split. { assumption. }
 
@@ -263,7 +264,6 @@ Admitted.
 
 Lemma array_encode_len : encode_len t.
 Proof.
-intros Hwf.
 intros v l Henc.
 unfold encode in Henc. fold encode in Henc.
 unfold encode_array in Henc.
@@ -300,6 +300,7 @@ Qed.
 Lemma array_props : Props t.
 Proof.
 split.
+- auto.
 - apply array_rt1.
 - apply array_rt2.
 - apply array_mono1.

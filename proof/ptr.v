@@ -7,7 +7,7 @@ From Minirust.proof Require Import defs high int.
 
 Section ptr.
 
-Context (layout: Layout).
+Context [layout: Layout].
 
 Notation align := (
   match layout with
@@ -19,9 +19,10 @@ Notation size := (
   | mkLayout align size => size
   end).
 
-Context (ptr_ty: PtrTy).
+Context [ptr_ty: PtrTy].
 
 Notation t := (TPtr ptr_ty layout).
+Context (Hwf: wf t).
 
 Notation Constraints addr align := (
   match ptr_ty with
@@ -76,7 +77,7 @@ Qed.
 
 Lemma ptr_mono1 : mono1 t.
 Proof.
-intros Hwf v1 v2 Hle Hv1 Hv2.
+intros v1 v2 Hle Hv1 Hv2.
 assert (exists a b l, VPtr a b = v1 /\ encode_int_raw PTR_SIZE Unsigned a = Some l). {
   destruct Hv1 as [la H].
   destruct (ptr_dec H) as [addr [Hv [l [Henc [Hdec HConstr]]]]].
@@ -118,7 +119,7 @@ Qed.
 
 Lemma ptr_mono2 : mono2 t.
 Proof.
-intros Hwf l1 l2 Hle.
+intros l1 l2 Hle.
 destruct (unwrap_abstract l1) eqn:Hunw; cycle 1. {
   unfold decode,decode_ptr. rewrite Hunw. simpl. trivial.
 }
@@ -155,7 +156,7 @@ Qed.
 
 Lemma ptr_rt1 : rt1 t.
 Proof.
-intros _ v Hval.
+intros v Hval.
 unfold is_valid_for in Hval.
 destruct (Hval) as [l Hl].
 destruct (ptr_dec Hl) as [addr [Hrew [bl [Henc [Hdec [Hconstr _]]]]]].
@@ -189,7 +190,7 @@ Qed.
 
 Lemma ptr_rt2 : rt2 t.
 Proof.
-intros Hwf l v Hdec.
+intros l v Hdec.
 destruct (ptr_dec Hdec) as [addr [Hv [bl (He & Hd & [Hconstr Hl])]]].
 rewrite Hv.
 exists (wrap_abstract bl (unique_prov l)).
@@ -201,7 +202,7 @@ Qed.
 
 Lemma ptr_encode_len : encode_len t.
 Proof.
-intros Hwf v l Henc.
+intros v l Henc.
 unfold encode,encode_ptr in Henc.
 destruct v; try discriminate Henc.
 destruct (int_in_range a PTR_SIZE Unsigned) eqn:E; cycle 1.
@@ -218,6 +219,7 @@ Qed.
 Lemma ptr_props : Props t.
 Proof.
 split.
+- auto.
 - apply ptr_rt1.
 - apply ptr_rt2.
 - apply ptr_mono1.

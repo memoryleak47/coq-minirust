@@ -7,9 +7,8 @@ From Minirust.proof.lemma Require Import utils.
 
 Section canonicalize.
 
-Context (ty: Ty).
+Context [ty: Ty].
 Context (ty_props: Props ty).
-Context (ty_wf: wf ty).
 
 Lemma canonicalize_lemma1 {l: list AbstractByte} (H: exists v, decode ty l = Some v) :
   exists l', canonicalize ty l = Some l'.
@@ -18,7 +17,7 @@ destruct H as [v H].
 assert (Hval: is_valid_for ty v).
 { exists l. auto. }
 
-destruct (PR_RT1 ty ty_props ty_wf v Hval) as [l' [Henc Hdec]].
+destruct (PR_RT1 ty ty_props v Hval) as [l' [Henc Hdec]].
 unfold canonicalize.
 rewrite H.
 simpl.
@@ -66,7 +65,7 @@ destruct (decode ty l) eqn:E; cycle 1.
 { simpl in H. discriminate H. }
 
 simpl in H.
-apply (PR_ENCODE_LEN ty ty_props ty_wf v l' H).
+apply (PR_ENCODE_LEN ty ty_props v l' H).
 Qed.
 
 End canonicalize.
