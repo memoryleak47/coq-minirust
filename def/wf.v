@@ -1,6 +1,5 @@
-Require Import ZArith List.
+Require Import ZArith List Permutation.
 Import ListNotations.
-
 From Minirust.def Require Import ty int_encoding.
 
 Section wf.
@@ -27,7 +26,6 @@ let f := (fun chunk =>
   size >= stop
 ) in Forall f chunks.
 
-
 Definition fields_wf (fields: Fields) (wf_call: Ty -> Prop) :=
 (fix fields_wf (fields: Fields) :=
   match fields with
@@ -36,15 +34,49 @@ Definition fields_wf (fields: Fields) (wf_call: Ty -> Prop) :=
   end
 ) fields.
 
-Definition fields_disjoint (fields: Fields) : Prop.
-Admitted.
+(* an interval is (offset, size) in bytes *)
+Notation Interval := (Size * Size)%type.
+
+(* checks whether i1 stops before i2 starts *)
+Definition interval_pair_sorted_disjoint (i1 i2: Interval) :=
+  match (i1,i2) with
+  | ((o1,s1), (o2,s2)) => o1+s1 <= o2
+  end.
+
+(* checks whether i1 is fully contained in i2 *)
+Definition interval_pair_contained_in (i1 i2: Interval) :=
+  match (i1,i2) with
+  | ((o1,s1), (o2,s2)) => o2 <= o1 /\ o2+s2 >= o1+s2
+  end.
+
+(* checks that the intervals are sorted, and don't overlap *)
+Fixpoint intervals_sorted_disjoint (l: list Interval) :=
+  match l with
+  | a::l' =>
+    match l' with
+    | b::_ => interval_pair_sorted_disjoint a b /\ intervals_sorted_disjoint l'
+    | [] => True
+    end
+  | [] => True
+  end.
+
+Definition intervals_disjoint (l: list Interval) := exists l' (_: Permutation l l'), intervals_sorted_disjoint l'.
+
+Definition interval_of_field (f: Size * Ty) :=
+  match f with
+  | (o,t) => (o, ty_size t)
+  end.
+
+Definition fields_disjoint (fields: Fields) : Prop :=
+  intervals_disjoint (map interval_of_field fields).
 
 (* checks that every field is completely contained a chunk *)
-Definition fields_in_chunks (fields: Fields) (chunks: Chunks) : Prop.
-Admitted.
+(* note that a chunk is already an `Interval` *)
+Definition fields_in_chunks (fields: Fields) (chunks: Chunks) :=
+  let fn := (fun f c => interval_pair_contained_in (interval_of_field f) c) in
+  Forall (fun f => Exists (fun c => fn f c) chunks) fields.
 
-Definition chunks_sorted_and_disjoint (chunks: Chunks) : Prop.
-Admitted.
+Definition chunks_sorted_and_disjoint (chunks: Chunks) := intervals_sorted_disjoint chunks.
 
 Fixpoint pow2 (x: nat) :=
   match x with
