@@ -68,3 +68,9 @@ decode (TArray TBool 0%Z) [] = Some (VTuple []) /\
 encode (TArray TBool 1%Z) (VTuple []) = None /\
 decode (TArray TBool 1%Z) [] = None.
 Proof. exec. Qed.
+
+Notation tu := (TUnion [] [(0, 2); (3, 1)] 4).
+Lemma test_union :
+encode tu (VUnion [[Uninit; Init x01 None]; [Init x02 None]]) = Some [Uninit; Init x01 None; Uninit; Init x02 None] /\
+decode tu [Init x01 None; Init x01 None; Init x01 None; Init x01 None] = Some (VUnion [[Init x01 None; Init x01 None]; [Init x01 None]]).
+Proof. exec. Qed.
