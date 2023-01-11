@@ -50,15 +50,8 @@ Definition interval_pair_contained_in (i1 i2: Interval) :=
   end.
 
 (* checks that the intervals are sorted, and don't overlap *)
-Fixpoint intervals_sorted_disjoint (l: list Interval) :=
-  match l with
-  | a::l' =>
-    match l' with
-    | b::_ => interval_pair_sorted_disjoint a b /\ intervals_sorted_disjoint l'
-    | [] => True
-    end
-  | [] => True
-  end.
+Definition intervals_sorted_disjoint (l: list Interval) :=
+  ForallOrdPairs interval_pair_sorted_disjoint l.
 
 Definition intervals_disjoint (l: list Interval) := exists l' (_: Permutation l l'), intervals_sorted_disjoint l'.
 
