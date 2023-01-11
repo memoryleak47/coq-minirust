@@ -18,7 +18,8 @@ destruct (length l =? size) eqn:Hlen; cycle 1.
 { simpl in H. discriminate H. }
 
 simpl in H.
-Admitted.
+inversion H. clear H.
+clear v H1.
 
 Lemma union_rt1 : rt1 t.
 Admitted.
