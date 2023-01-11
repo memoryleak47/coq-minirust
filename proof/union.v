@@ -1,5 +1,6 @@
 From Minirust.def Require Import ty encoding thm wf le.
 From Minirust.proof Require Import defs.
+Require Import Nat.
 
 Section union.
 
@@ -9,6 +10,15 @@ Context {chunks: Chunks}.
 Context {size: Size}.
 Notation t := (TUnion fields chunks size).
 Context (Hwf: wf t).
+
+Lemma union_dec [l v] (H: decode t l = Some v) : exists l', encode t v = Some l'.
+Proof.
+unfold decode,decode_union in H.
+destruct (length l =? size) eqn:Hlen; cycle 1.
+{ simpl in H. discriminate H. }
+
+simpl in H.
+Admitted.
 
 Lemma union_rt1 : rt1 t.
 Admitted.
