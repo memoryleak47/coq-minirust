@@ -1,5 +1,5 @@
 From Minirust.def Require Import ty encoding thm wf.
-From Minirust.proof Require Import defs int bool ptr array.
+From Minirust.proof Require Import defs int bool ptr array union.
 Require Import List.
 Import ListNotations.
 
@@ -18,7 +18,7 @@ induction ty; intros Hwf.
 - apply (ptr_props Hwf).
 - apply cheat.
 - apply (array_props IHty Hwf).
-- apply cheat.
+- apply (union_props Hwf).
 Qed.
 
 Theorem gen_rt1 (ty: Ty) : wf ty -> rt1 ty.
