@@ -79,6 +79,13 @@ auto.
 Qed.
 
 Lemma union_rt1 : rt1 t.
+Proof.
+intros v [l Hdec].
+destruct (union_dec Hdec) as (Hlen & data & -> & Hdata & Hfor & Henc).
+eexists _.
+split. { apply Henc. }
+unfold decode,decode_union.
+simpl.
 Admitted.
 
 Lemma union_rt2 : rt2 t.
