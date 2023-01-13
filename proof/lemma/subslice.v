@@ -56,3 +56,15 @@ apply IH.
 simpl in H.
 lia.
 Qed.
+
+Lemma write_subslice_length {T} size offset (l l': list T)
+  (Hl: size = length l)
+  (Hrange: offset + length l' <= length l) :
+length (write_subslice_at_index l offset l') = size.
+Proof.
+unfold write_subslice_at_index.
+do 2 rewrite app_length.
+rewrite firstn_length.
+rewrite skipn_length.
+lia.
+Qed.

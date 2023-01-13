@@ -1,7 +1,7 @@
 From Minirust.def Require Import ty encoding thm wf le utils.
 From Minirust.proof Require Import defs.
 From Minirust.proof.lemma Require Import utils subslice.
-Require Import List Nat PeanoNat.
+Require Import List Nat PeanoNat Bool Lia.
 
 Section union.
 
@@ -78,12 +78,67 @@ split. { apply (chunk_size_lemma Hlen). }
 auto.
 Qed.
 
+Lemma mk_uninit_length : length (mk_uninit size) = size.
+Proof.
+unfold mk_uninit.
+rewrite map_length.
+apply seq_length.
+Qed.
+
+Lemma fold_left_step {A B} (f: A -> B -> A) x l a :
+fold_left f (x::l) a = fold_left f l (f a x).
+Proof.
+simpl.
+auto.
+Qed.
+
 Lemma fold_encode_length {data}
   (Hc : forallb check_chunk_size (combine chunks data) = true)
   (Hlen : length data = length chunks) :
 length (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) = size.
 Proof.
-Admitted.
+have Hfit chunks_fit_size_l.
+unfold chunks_fit_size in Hfit.
+clear Hwf.
+
+assert (
+  forall a, length a = size ->
+  length (fold_left encode_union_chunk (combine chunks data) a) = size
+) as Hsub; cycle 1.
+{ apply Hsub. apply mk_uninit_length. }
+
+generalize dependent chunks.
+
+induction data as [|x data IH].
+{ intros. rewrite combine_nil. simpl. auto. }
+
+intros.
+destruct chunks0. { simpl. auto. }
+
+simpl (combine _ _).
+rewrite fold_left_step.
+assert (length (encode_union_chunk a (p, x)) = size). {
+  unfold encode_union_chunk.
+  destruct p as [offset len].
+  apply write_subslice_length. { auto. }
+  inversion Hfit.
+  simpl in H2.
+  rewrite H.
+  replace (length x) with len. { auto. }
+  simpl in Hc.
+  destruct (len =? length x) eqn:E; cycle 1. { simpl in Hc. discriminate Hc. }
+  apply Nat.eqb_eq.
+  auto.
+}
+
+apply IH.
+- simpl in Hc.
+  destruct (forallb check_chunk_size (combine chunks0 data))%bool; auto.
+  rewrite andb_false_r in Hc. discriminate Hc.
+- simpl in Hlen. inversion Hlen. auto.
+- inversion Hfit. auto.
+- auto.
+Qed.
 
 Lemma rt_map {data}
   (Hc : forallb check_chunk_size (combine chunks data) = true)
