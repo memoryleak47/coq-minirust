@@ -1,6 +1,6 @@
-From Minirust.def Require Import ty encoding thm wf le.
+From Minirust.def Require Import ty encoding thm wf le utils.
 From Minirust.proof Require Import defs.
-Require Import Nat.
+Require Import List Nat.
 
 Section union.
 
@@ -18,8 +18,14 @@ destruct (length l =? size) eqn:Hlen; cycle 1.
 { simpl in H. discriminate H. }
 
 simpl in H.
-inversion H. clear H.
-clear v H1.
+inversion H. clear H v H1.
+unfold encode,encode_union.
+simpl.
+unfold assuming.
+rewrite (map_length (decode_union_chunk l) chunks).
+rewrite PeanoNat.Nat.eqb_refl.
+simpl.
+Admitted.
 
 Lemma union_rt1 : rt1 t.
 Admitted.

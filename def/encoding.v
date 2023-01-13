@@ -178,13 +178,17 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
   >>= assuming_const (length l =? size).
 
 (* unions *)
-Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) : option (list AbstractByte) :=
-  let f := fun chunk l =>
-    match chunk with
-    | ((offset, _chunk_s), cdata) => write_subslice_at_index l offset cdata
-    end
-  in
+Definition encode_union_chunk (chunk: (Size * Size) * list AbstractByte) (l: list AbstractByte) :=
+  match chunk with
+  | ((offset, _chunk_s), cdata) => write_subslice_at_index l offset cdata
+  end.
 
+Definition check_chunk_size (chunk: (Size * Size) * list AbstractByte) :=
+  match chunk with
+  | ((offset,chunk_s), cdata) => chunk_s =? length cdata
+  end.
+
+Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) : option (list AbstractByte) :=
   let uninit := mk_uninit size in
 
   match v with
@@ -195,21 +199,16 @@ Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value
     (length chunks_data =? length chunks)
   )
   o-> combine chunks
-  >>= assuming (forallb (fun x =>
-    match x with
-    | ((offset,chunk_s), cdata) => chunk_s =? length cdata
-    end
-  ))
-  o-> fold_right f uninit.
+  >>= assuming (forallb check_chunk_size)
+  o-> fold_right encode_union_chunk uninit.
+
+Definition decode_union_chunk (l: list AbstractByte) (chunk: Size * Size) :=
+  match chunk with
+  | (offset, chunk_s) => subslice_with_length l offset chunk_s
+  end.
 
 Definition decode_union (fields: Fields) (chunks: Chunks) (size: Size) (l: list AbstractByte) : option Value :=
-  let f := fun chunk =>
-    match chunk with
-    | (offset, chunk_s) => subslice_with_length l offset chunk_s
-    end
-  in
-
-  Some (map f chunks)
+  Some (map (decode_union_chunk l) chunks)
   o-> VUnion
   >>= assuming_const (length l =? size).
 
