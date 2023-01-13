@@ -78,6 +78,21 @@ split. { apply (chunk_size_lemma Hlen). }
 auto.
 Qed.
 
+Lemma fold_encode_length {data}
+  (Hc : forallb check_chunk_size (combine chunks data) = true)
+  (Hlen : length data = length chunks) :
+length (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) = size.
+Proof.
+Admitted.
+
+Lemma rt_map {data}
+  (Hc : forallb check_chunk_size (combine chunks data) = true)
+  (Hlen : length data = length chunks) :
+map (decode_union_chunk
+    (fold_left encode_union_chunk (combine chunks data) (mk_uninit size))
+    ) chunks = data.
+Admitted.
+
 Lemma union_rt1 : rt1 t.
 Proof.
 intros v [l Hdec].
@@ -86,7 +101,15 @@ eexists _.
 split. { apply Henc. }
 unfold decode,decode_union.
 simpl.
-Admitted.
+assert (length data = length chunks) as Hdata_len.
+{ rewrite Hdata. apply map_length. }
+
+rewrite (fold_encode_length Hfor Hdata_len).
+rewrite Nat.eqb_refl.
+simpl.
+do 2 f_equal.
+apply (rt_map Hfor Hdata_len).
+Qed.
 
 Lemma union_rt2 : rt2 t.
 Admitted.
