@@ -89,3 +89,30 @@ rewrite firstn_all.
 rewrite app_nil_end.
 auto.
 Qed.
+
+Lemma subslice_independent_write {T} {offset offset'} {d d' a: list T}
+(Horig: subslice_with_length a offset (length d) = d)
+(Hindep: offset + length d <= offset') :
+subslice_with_length (write_subslice_at_index a offset' d') offset (length d) =
+d.
+Proof.
+unfold subslice_with_length,write_subslice_at_index.
+unfold subslice_with_length in Horig.
+rewrite skipn_app.
+rewrite firstn_app.
+rewrite skipn_length.
+rewrite firstn_length.
+assert (length a - offset >=  length d). {
+  assert (length (firstn (length d) (skipn offset a)) = length d). { f_equal. auto. }
+  rewrite firstn_length,skipn_length in H.
+  lia.
+}
+assert (length d - (Nat.min offset' (length a) - offset) = 0) as ->. { lia. }
+simpl.
+rewrite <- app_nil_end.
+
+rewrite skipn_firstn_comm.
+rewrite firstn_firstn.
+assert (Nat.min (length d) (offset' - offset) = length d) as ->. { lia. }
+auto.
+Qed.

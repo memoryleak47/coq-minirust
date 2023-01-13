@@ -153,7 +153,48 @@ Lemma rt_map_step2 {a offset cs d data}
   (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint ((offset,length d)::cs)) :
   subslice_with_length (fold_left encode_union_chunk (combine cs data) a) offset (length d) = d.
 Proof.
-Admitted.
+generalize dependent cs.
+generalize dependent a.
+induction data as [|d' data IH].
+{ intros. rewrite combine_nil. simpl. auto. }
+
+intros.
+destruct cs as [|[offset' len'] cs].
+{ discriminate Hlen. }
+
+assert (len' = length d') as -> .
+{ simpl in Hc. destruct (Nat.eqb_spec len' (length d')); auto. discriminate Hc. }
+
+simpl (combine _ _).
+rewrite fold_left_step.
+apply IH.
+- unfold encode_union_chunk.
+  apply write_subslice_length; auto.
+  inversion Hfit. inversion H2.
+  simpl in H5.
+  rewrite Hlen_a.
+  simpl in Hc.
+  auto.
+- assert (interval_pair_sorted_disjoint (offset, length d) (offset', length d')). {
+    unfold encode_union_chunk.
+    inversion Hdisj.
+    inversion H1.
+    auto.
+  }
+  unfold interval_pair_sorted_disjoint in H.
+  unfold encode_union_chunk.
+  apply subslice_independent_write; auto.
+- simpl in Hc. rewrite Nat.eqb_refl in Hc. auto.
+- auto.
+- inversion Hfit.
+  apply Forall_cons. { auto. }
+  inversion H2.
+  auto.
+- inversion Hdisj.
+  apply FOP_cons.
+  -- inversion H1. auto.
+  -- inversion H2. auto.
+Qed.
 
 Lemma rt_map_step {a offset cs d data}
   (Hlen_a : length a = size)
@@ -180,7 +221,6 @@ apply rt_map_step2; auto.
   simpl in H1.
   lia.
 Qed.
-
 
 Lemma rt_map {cs data}
   (Hc : forallb check_chunk_size (combine cs data) = true)
@@ -233,55 +273,6 @@ apply IH.
 - inversion Hfit. auto.
 - inversion Hdisj. auto.
 Qed.
-
-(*
-For each encoding step, we prove that previous decode equations stay the same,
-and we add one more decode equation.
-
-How do I need to setup the induction for that?
-*)
-
-(*
-generalize dependent cs.
-induction data as [|x data IH].
-{ admit. (* nothing to prove here! *) }
-
-intros.
-Admitted.
-*)
-(*
-Notation enc x y := ((fold_left encode_union_chunk (combine x y) (mk_uninit size))).
-assert (Hgoal:
-  Forall (fun x =>
-    match x with
-    | (c_interval,c_data) => decode_union_chunk (enc cs data) c_interval = c_data
-    end
-  ) (combine cs data)
-); cycle 1. {
-  declare Enc HEnc (enc cs data).
-  rewrite HEnc in Hgoal. rewrite HEnc.
-  clear HEnc.
-  generalize dependent cs.
-  induction data.
-  { intros. destruct cs; auto. discriminate Hlen. }
-
-  intros.
-  destruct cs.
-  { discriminate Hlen. }
-
-  simpl (map _ _).
-  f_equal.
-  - inversion Hgoal. auto.
-  - inversion Hgoal.
-    apply IHdata.
-  --  simpl in Hc.
-      destruct ((let (_, chunk_s) := p in chunk_s =? length a)); auto. discriminate Hc.
-  -- simpl in Hlen. inversion Hlen. auto.
-  -- inversion Hdisj. auto.
-  -- inversion Hgoal. auto.
-}
-Admitted.
-*)
 
 Lemma union_rt1 : rt1 t.
 Proof.
