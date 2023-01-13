@@ -11,12 +11,23 @@ Context {size: Size}.
 Notation t := (TUnion fields chunks size).
 Context (Hwf: wf t).
 
-Lemma union_dec [l v] (H: decode t l = Some v) : exists l', encode t v = Some l'.
+Lemma chunk_size_lemma {l} (Hlen: length l = size) :
+  forallb check_chunk_size (combine chunks (map (decode_union_chunk l) chunks)) = true.
+Proof.
+Admitted.
+
+Lemma union_dec [l v] (H: decode t l = Some v) :
+  length l = size /\
+  exists l', encode t v = Some l'.
 Proof.
 unfold decode,decode_union in H.
-destruct (length l =? size) eqn:Hlen; cycle 1.
-{ simpl in H. discriminate H. }
+assert (length l = size) as Hlen.
+{ destruct (PeanoNat.Nat.eqb_spec (length l) size); auto. simpl in H. discriminate H. }
 
+split. { auto. }
+
+rewrite Hlen in H.
+rewrite PeanoNat.Nat.eqb_refl in H.
 simpl in H.
 inversion H. clear H v H1.
 unfold encode,encode_union.
@@ -25,7 +36,11 @@ unfold assuming.
 rewrite (map_length (decode_union_chunk l) chunks).
 rewrite PeanoNat.Nat.eqb_refl.
 simpl.
-Admitted.
+rewrite (chunk_size_lemma Hlen).
+simpl.
+eexists _.
+auto.
+Qed.
 
 Lemma union_rt1 : rt1 t.
 Admitted.
