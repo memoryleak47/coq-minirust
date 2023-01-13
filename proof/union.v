@@ -50,8 +50,8 @@ Lemma union_dec [l v] (H: decode t l = Some v) :
   exists data, v = VUnion data /\
   data = map (decode_union_chunk l) chunks /\
   forallb check_chunk_size (combine chunks data) = true /\
-  encode t v = Some (fold_right encode_union_chunk
-       (mk_uninit size) (combine chunks data)).
+  encode t v = Some (fold_left encode_union_chunk
+       (combine chunks data) (mk_uninit size) ).
 Proof.
 unfold decode,decode_union in H.
 assert (length l = size) as Hlen.

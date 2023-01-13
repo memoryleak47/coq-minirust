@@ -178,7 +178,7 @@ Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (su
   >>= assuming_const (length l =? size).
 
 (* unions *)
-Definition encode_union_chunk (chunk: (Size * Size) * list AbstractByte) (l: list AbstractByte) :=
+Definition encode_union_chunk (l: list AbstractByte) (chunk: (Size * Size) * list AbstractByte) :=
   match chunk with
   | ((offset, _chunk_s), cdata) => write_subslice_at_index l offset cdata
   end.
@@ -200,7 +200,7 @@ Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value
   )
   o-> combine chunks
   >>= assuming (forallb check_chunk_size)
-  o-> fold_right encode_union_chunk uninit.
+  o-> (fun chunks => fold_left encode_union_chunk chunks uninit).
 
 Definition decode_union_chunk (l: list AbstractByte) (chunk: Size * Size) :=
   match chunk with
