@@ -16,6 +16,10 @@ Lemma chunks_fit_size_l : chunks_fit_size chunks size.
 apply Hwf.
 Qed.
 
+Lemma chunks_disjoint_l : ForallOrdPairs interval_pair_sorted_disjoint chunks.
+apply Hwf.
+Qed.
+
 Lemma chunk_size_lemma {l} (Hlen: length l = size) :
   forallb check_chunk_size (combine chunks (map (decode_union_chunk l) chunks)) = true.
 Proof.
@@ -140,12 +144,14 @@ apply IH.
 - auto.
 Qed.
 
-Lemma rt_map {data}
-  (Hc : forallb check_chunk_size (combine chunks data) = true)
-  (Hlen : length data = length chunks) :
+Lemma rt_map {cs} {data}
+  (Hc : forallb check_chunk_size (combine cs data) = true)
+  (Hlen : length data = length cs)
+  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
 map (decode_union_chunk
-    (fold_left encode_union_chunk (combine chunks data) (mk_uninit size))
-    ) chunks = data.
+    (fold_left encode_union_chunk (combine cs data) (mk_uninit size))
+    ) cs = data.
+Proof.
 Admitted.
 
 Lemma union_rt1 : rt1 t.
@@ -163,7 +169,7 @@ rewrite (fold_encode_length Hfor Hdata_len).
 rewrite Nat.eqb_refl.
 simpl.
 do 2 f_equal.
-apply (rt_map Hfor Hdata_len).
+apply (rt_map Hfor Hdata_len chunks_disjoint_l).
 Qed.
 
 Lemma union_rt2 : rt2 t.
