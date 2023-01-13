@@ -144,15 +144,144 @@ apply IH.
 - auto.
 Qed.
 
-Lemma rt_map {cs} {data}
+Lemma rt_map_step2 {a offset cs d data}
+  (Hlen_a : length a = size)
+  (Ha: subslice_with_length a offset (length d) = d)
   (Hc : forallb check_chunk_size (combine cs data) = true)
   (Hlen : length data = length cs)
+  (Hfit: chunks_fit_size ((offset,length d)::cs) size)
+  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint ((offset,length d)::cs)) :
+  subslice_with_length (fold_left encode_union_chunk (combine cs data) a) offset (length d) = d.
+Proof.
+Admitted.
+
+Lemma rt_map_step {a offset cs d data}
+  (Hlen_a : length a = size)
+  (Hc : forallb check_chunk_size (combine cs data) = true)
+  (Hlen : length data = length cs)
+  (Hfit: chunks_fit_size ((offset,length d)::cs) size)
+  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint ((offset,length d)::cs)) :
+  subslice_with_length
+    (fold_left
+      encode_union_chunk
+      (combine cs data)
+      (write_subslice_at_index a offset d)
+    )
+    offset
+    (length d) = d.
+Proof.
+apply rt_map_step2; auto.
+- apply write_subslice_length. auto.
+  unfold chunks_fit_size in Hfit.
+  inversion Hfit.
+  simpl in H1. rewrite Hlen_a. auto.
+- apply subslice_rt.
+  inversion Hfit.
+  simpl in H1.
+  lia.
+Qed.
+
+
+Lemma rt_map {cs data}
+  (Hc : forallb check_chunk_size (combine cs data) = true)
+  (Hlen : length data = length cs)
+  (Hfit: chunks_fit_size cs size)
   (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
 map (decode_union_chunk
     (fold_left encode_union_chunk (combine cs data) (mk_uninit size))
     ) cs = data.
 Proof.
+declare a Ha (mk_uninit size).
+rewrite Ha.
+assert (Ha_len: length a = size).
+{ rewrite <- Ha. apply mk_uninit_length. }
+
+clear Ha.
+
+generalize dependent cs.
+generalize dependent a.
+induction data as [|d data IH].
+{ intros. destruct cs; auto. discriminate Hlen. }
+
+intros.
+destruct cs as [|c cs]. { discriminate Hlen. }
+
+simpl (combine _ _).
+rewrite fold_left_step.
+simpl (encode_union_chunk (mk_uninit size) (c,d)).
+destruct c as [offset len].
+simpl.
+f_equal. {
+  assert (len = length d) as ->.
+  { simpl in Hc. destruct (Nat.eqb_spec len (length d)); auto. discriminate Hc. }
+  apply rt_map_step; auto.
+  - simpl in Hc.
+    rewrite Nat.eqb_refl in Hc.
+    auto.
+}
+
+apply IH.
+- apply write_subslice_length. { auto. }
+  simpl in Hc.
+  rewrite Ha_len.
+  replace (length d) with len.
+  inversion Hfit.
+  simpl in H1. lia.
+  destruct (Nat.eqb_spec len (length d)); auto. simpl in Hc. discriminate Hc.
+- simpl in Hc. destruct ((len =? length d)). simpl in Hc. auto. simpl in Hc. discriminate Hc.
+- simpl in Hlen. auto.
+- inversion Hfit. auto.
+- inversion Hdisj. auto.
+Qed.
+
+(*
+For each encoding step, we prove that previous decode equations stay the same,
+and we add one more decode equation.
+
+How do I need to setup the induction for that?
+*)
+
+(*
+generalize dependent cs.
+induction data as [|x data IH].
+{ admit. (* nothing to prove here! *) }
+
+intros.
 Admitted.
+*)
+(*
+Notation enc x y := ((fold_left encode_union_chunk (combine x y) (mk_uninit size))).
+assert (Hgoal:
+  Forall (fun x =>
+    match x with
+    | (c_interval,c_data) => decode_union_chunk (enc cs data) c_interval = c_data
+    end
+  ) (combine cs data)
+); cycle 1. {
+  declare Enc HEnc (enc cs data).
+  rewrite HEnc in Hgoal. rewrite HEnc.
+  clear HEnc.
+  generalize dependent cs.
+  induction data.
+  { intros. destruct cs; auto. discriminate Hlen. }
+
+  intros.
+  destruct cs.
+  { discriminate Hlen. }
+
+  simpl (map _ _).
+  f_equal.
+  - inversion Hgoal. auto.
+  - inversion Hgoal.
+    apply IHdata.
+  --  simpl in Hc.
+      destruct ((let (_, chunk_s) := p in chunk_s =? length a)); auto. discriminate Hc.
+  -- simpl in Hlen. inversion Hlen. auto.
+  -- inversion Hdisj. auto.
+  -- inversion Hgoal. auto.
+}
+Admitted.
+*)
 
 Lemma union_rt1 : rt1 t.
 Proof.
@@ -169,7 +298,7 @@ rewrite (fold_encode_length Hfor Hdata_len).
 rewrite Nat.eqb_refl.
 simpl.
 do 2 f_equal.
-apply (rt_map Hfor Hdata_len chunks_disjoint_l).
+apply (rt_map Hfor Hdata_len chunks_fit_size_l chunks_disjoint_l).
 Qed.
 
 Lemma union_rt2 : rt2 t.

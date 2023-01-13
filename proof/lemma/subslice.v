@@ -68,3 +68,10 @@ rewrite firstn_length.
 rewrite skipn_length.
 lia.
 Qed.
+
+Lemma subslice_rt {T offset} {l l': list T}
+  (H: length l' + offset <= length l) :
+  subslice_with_length (write_subslice_at_index l offset l') offset
+  (length l') = l'.
+Proof.
+Admitted.
