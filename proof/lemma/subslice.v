@@ -74,4 +74,18 @@ Lemma subslice_rt {T offset} {l l': list T}
   subslice_with_length (write_subslice_at_index l offset l') offset
   (length l') = l'.
 Proof.
-Admitted.
+unfold subslice_with_length,write_subslice_at_index.
+rewrite skipn_app.
+assert ((offset - length (firstn offset l) = 0)) as ->.
+{ rewrite firstn_length. lia. }
+simpl.
+rewrite skipn_firstn_comm.
+assert (offset - offset = 0) as ->. { lia. }
+simpl.
+rewrite firstn_app.
+assert (length l' - length l' = 0) as ->. { lia. }
+simpl.
+rewrite firstn_all.
+rewrite app_nil_end.
+auto.
+Qed.
