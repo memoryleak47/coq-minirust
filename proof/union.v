@@ -56,7 +56,7 @@ Lemma union_dec [l v] (H: decode t l = Some v) :
   data = map (decode_union_chunk l) chunks /\
   forallb check_chunk_size (combine chunks data) = true /\
   encode t v = Some (fold_left encode_union_chunk
-       (combine chunks data) (mk_uninit size) ).
+       (combine chunks data) (repeat Uninit size) ).
 Proof.
 unfold decode,decode_union in H.
 assert (length l = size) as Hlen.
@@ -83,13 +83,6 @@ split. { apply (chunk_size_lemma Hlen). }
 auto.
 Qed.
 
-Lemma mk_uninit_length : length (mk_uninit size) = size.
-Proof.
-unfold mk_uninit.
-rewrite map_length.
-apply seq_length.
-Qed.
-
 Lemma fold_left_step {A B} (f: A -> B -> A) x l a :
 fold_left f (x::l) a = fold_left f l (f a x).
 Proof.
@@ -100,7 +93,7 @@ Qed.
 Lemma fold_encode_length {data}
   (Hc : forallb check_chunk_size (combine chunks data) = true)
   (Hlen : length data = length chunks) :
-length (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) = size.
+length (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) = size.
 Proof.
 have Hfit chunks_fit_size_l.
 unfold chunks_fit_size in Hfit.
@@ -110,7 +103,7 @@ assert (
   forall a, length a = size ->
   length (fold_left encode_union_chunk (combine chunks data) a) = size
 ) as Hsub; cycle 1.
-{ apply Hsub. apply mk_uninit_length. }
+{ apply Hsub. apply repeat_length. }
 
 generalize dependent chunks.
 
@@ -229,13 +222,13 @@ Lemma rt_map {cs data}
   (Hfit: chunks_fit_size cs size)
   (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
 map (decode_union_chunk
-    (fold_left encode_union_chunk (combine cs data) (mk_uninit size))
+    (fold_left encode_union_chunk (combine cs data) (repeat Uninit size))
     ) cs = data.
 Proof.
-declare a Ha (mk_uninit size).
+declare a Ha (repeat Uninit size).
 rewrite Ha.
 assert (Ha_len: length a = size).
-{ rewrite <- Ha. apply mk_uninit_length. }
+{ rewrite <- Ha. apply repeat_length. }
 
 clear Ha.
 
@@ -249,7 +242,7 @@ destruct cs as [|c cs]. { discriminate Hlen. }
 
 simpl (combine _ _).
 rewrite fold_left_step.
-simpl (encode_union_chunk (mk_uninit size) (c,d)).
+simpl (encode_union_chunk (repeat Uninit size) (c,d)).
 destruct c as [offset len].
 simpl.
 f_equal. {
