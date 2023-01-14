@@ -18,8 +18,7 @@ Context (Hwf: wf t).
 
 Lemma elem_ty_wf : wf elem_ty.
 Proof.
-inversion Hwf.
-auto.
+apply Hwf.
 Qed.
 
 Definition elem_props := props_IH elem_ty_wf.

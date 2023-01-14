@@ -59,23 +59,22 @@ Definition chunks_sorted (chunks: Chunks) :=
   forall i j, i < length chunks -> j < length chunks -> i < j ->
   fst (nth i chunks (0,0)) <= fst (nth j chunks (0,0)).
 
+(* This is a fixpoint so that Coq doesn't consider it to be ill-formed *)
+Definition fields_wf (fields: Fields) (wf_call: Ty -> Prop) :=
+(fix fields_wf (fields: Fields) :=
+  match fields with
+  | [] => True
+  | (_, ty)::fields' => wf_call ty /\ fields_wf fields'
+  end
+) fields.
+
 Fixpoint pow2 (x: nat) :=
   match x with
   | 0 => 1
   | S y => 2 * pow2 y
   end.
 
-Fixpoint ty_depth (t: Ty) : nat :=
-  match t with
-  | TBool => 0
-  | TInt _ _ => 0
-  | TPtr _ _ => 0
-  | TArray e _ => S (ty_depth e)
-  | TTuple fields _ => S (list_max (map (fun x => ty_depth (snd x)) fields))
-  | TUnion fields _ _ => S (list_max (map (fun x => ty_depth (snd x)) fields))
-  end.
-
-Program Fixpoint wf (t: Ty) {measure (ty_depth t)} : Prop :=
+Fixpoint wf (t: Ty) : Prop :=
   valid_size (ty_size t)
   /\
   match t with
@@ -83,92 +82,16 @@ Program Fixpoint wf (t: Ty) {measure (ty_depth t)} : Prop :=
   | TBool => True
   | TPtr _ _ => True
   | TTuple fields size => fields_fit_size fields size
-                      /\ forall f, f < length fields ->
-                           match nth f fields (0,TBool) with
-                           | (start,ty) => wf ty
-                           end
+                      /\ fields_wf fields wf
                       /\ fields_disjoint fields
   | TArray elem_ty count => wf elem_ty
                         /\ (count >= 0)%Z
   | TUnion fields chunks size => fields_fit_size fields size
-                             /\   forall f, f < length fields ->
-                                  match nth f fields (0,TBool) with
-                                  | (start,ty) => wf ty
-                                  end
+                             /\ fields_wf fields wf
                              /\ fields_in_chunks fields chunks
                              /\ chunks_disjoint chunks
                              /\ chunks_sorted chunks
                              /\ chunks_fit_size chunks size
   end.
-
-
-(* prove of the well-formedness of the recursion within wf: *)
-
-Lemma wf_helper {a i l}
-  (H1: i < length l)
-  (H2: nth i l 0 = a):
-  a < S (list_max l).
-Proof.
-assert (a <= list_max l); cycle 1. { lia. }
-assert (In a l).
-{ rewrite <- H2. apply (nth_In l 0 H1). }
-
-clear H2 H1 i.
-destruct (Nat.leb_spec a (list_max l)). { auto. }
-destruct l. { simpl in H. contradict H. }
-
-assert (Forall (fun x => x < a) (n::l)). {
-  apply list_max_lt. { intros A. discriminate A. }
-  auto.
-}
-
-assert (forall x, In x (n::l) -> x < a). {
-  apply Forall_forall.
-  auto.
-}
-
-assert (a < a). { apply (H2 _ H). }
-lia.
-Qed.
-
-Next Obligation.
-simpl (ty_depth (TTuple fields size)).
-destruct (Nat.ltb_spec f (length fields)); cycle 1. {
-  rewrite nth_overflow in Heq_anonymous.
-  inversion Heq_anonymous.
-  simpl. lia. auto.
-}
-
-assert (f < length ((map (fun x : Size * Ty => ty_depth (snd x)) fields))).
-{ rewrite map_length. auto. }
-
-apply (wf_helper H0).
-set (f_ := (fun x : Size * Ty => ty_depth (snd x))).
-replace 0 with ( f_ (0,TBool)); cycle 1.
-{ simpl. auto. }
-
-rewrite map_nth.
-replace ((nth f fields (0, TBool))) with (start, ty); auto.
-Qed.
-
-Next Obligation.
-simpl (ty_depth (TUnion fields chunks size)).
-destruct (Nat.ltb_spec f (length fields)); cycle 1. {
-  rewrite nth_overflow in Heq_anonymous.
-  inversion Heq_anonymous.
-  simpl. lia. auto.
-}
-
-assert (f < length ((map (fun x : Size * Ty => ty_depth (snd x)) fields))).
-{ rewrite map_length. auto. }
-
-apply (wf_helper H0).
-set (f_ := (fun x : Size * Ty => ty_depth (snd x))).
-replace 0 with ( f_ (0,TBool)); cycle 1.
-{ simpl. auto. }
-
-rewrite map_nth.
-replace ((nth f fields (0, TBool))) with (start, ty); auto.
-Qed.
 
 End wf.
