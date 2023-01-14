@@ -1,4 +1,4 @@
-Require Import ZArith List Permutation.
+Require Import ZArith List Permutation Coq.Program.Tactics Coq.Program.Wf Nat Lia.
 Import ListNotations.
 From Minirust.def Require Import ty int_encoding.
 
@@ -9,39 +9,19 @@ Context {params: Params}.
 Definition valid_size (size: Size) : Prop := (int_in_range (Z.of_nat size) PTR_SIZE Signed) = true.
 
 Definition fields_fit_size (fields: Fields) (size : Size) :=
-let f := (fun field =>
-  let start := fst field in
-  let ty := snd field in
-  let stop := start + ty_size ty in
-
-  size >= stop
-) in Forall f fields.
+  forall f, f < length fields ->
+  match nth f fields (0,TBool) with
+  | (start,ty) => size >= start + ty_size ty
+  end.
 
 Definition chunks_fit_size (chunks: Chunks) (size: Size) :=
-let f := (fun chunk =>
-  let start := fst chunk in
-  let len := snd chunk in
-  let stop := start + len in
-
-  size >= stop
-) in Forall f chunks.
-
-Definition fields_wf (fields: Fields) (wf_call: Ty -> Prop) :=
-(fix fields_wf (fields: Fields) :=
-  match fields with
-  | [] => True
-  | (_, ty)::fields' => wf_call ty /\ fields_wf fields'
-  end
-) fields.
+  forall c, c < length chunks ->
+  match nth c chunks (0,0) with
+  | (offset,len) => size >= offset+len
+  end.
 
 (* an interval is (offset, size) in bytes *)
 Notation Interval := (Size * Size)%type.
-
-(* checks whether i1 stops before i2 starts *)
-Definition interval_pair_sorted_disjoint (i1 i2: Interval) :=
-  match (i1,i2) with
-  | ((o1,s1), (o2,s2)) => o1+s1 <= o2
-  end.
 
 (* checks whether i1 is fully contained in i2 *)
 Definition interval_pair_contained_in (i1 i2: Interval) :=
@@ -49,11 +29,15 @@ Definition interval_pair_contained_in (i1 i2: Interval) :=
   | ((o1,s1), (o2,s2)) => o2 <= o1 /\ o2+s2 >= o1+s2
   end.
 
-(* checks that the intervals are sorted, and don't overlap *)
-Definition intervals_sorted_disjoint (l: list Interval) :=
-  ForallOrdPairs interval_pair_sorted_disjoint l.
+(* checks whether i1 and i2 are disjoint *)
+Definition interval_pair_disjoint (i1 i2: Interval) :=
+  match (i1,i2) with
+  | ((o1,s1), (o2,s2)) => o1+s1 <= o2 \/ o2+s2 <= o1
+  end.
 
-Definition intervals_disjoint (l: list Interval) := exists l' (_: Permutation l l'), intervals_sorted_disjoint l'.
+Definition intervals_disjoint (l: list Interval) :=
+  forall i j, i < length l -> j < length l -> i <> j ->
+  interval_pair_disjoint (nth i l (0,0)) (nth j l (0,0)).
 
 Definition interval_of_field (f: Size * Ty) :=
   match f with
@@ -66,10 +50,14 @@ Definition fields_disjoint (fields: Fields) : Prop :=
 (* checks that every field is completely contained a chunk *)
 (* note that a chunk is already an `Interval` *)
 Definition fields_in_chunks (fields: Fields) (chunks: Chunks) :=
-  let fn := (fun f c => interval_pair_contained_in (interval_of_field f) c) in
-  Forall (fun f => Exists (fun c => fn f c) chunks) fields.
+  forall f, f < length fields ->
+  exists c, c < length chunks ->
+  interval_pair_contained_in (interval_of_field (nth f fields (0,TBool))) (nth c chunks (0,0)).
 
-Definition chunks_sorted_and_disjoint (chunks: Chunks) := intervals_sorted_disjoint chunks.
+Definition chunks_disjoint (chunks: Chunks) := intervals_disjoint chunks.
+Definition chunks_sorted (chunks: Chunks) :=
+  forall i j, i < length chunks -> j < length chunks -> i < j ->
+  fst (nth i chunks (0,0)) <= fst (nth j chunks (0,0)).
 
 Fixpoint pow2 (x: nat) :=
   match x with
@@ -77,7 +65,17 @@ Fixpoint pow2 (x: nat) :=
   | S y => 2 * pow2 y
   end.
 
-Fixpoint wf (t: Ty) : Prop :=
+Fixpoint ty_depth (t: Ty) : nat :=
+  match t with
+  | TBool => 0
+  | TInt _ _ => 0
+  | TPtr _ _ => 0
+  | TArray e _ => S (ty_depth e)
+  | TTuple fields _ => S (list_max (map (fun x => ty_depth (snd x)) fields))
+  | TUnion fields _ _ => S (list_max (map (fun x => ty_depth (snd x)) fields))
+  end.
+
+Program Fixpoint wf (t: Ty) {measure (ty_depth t)} : Prop :=
   valid_size (ty_size t)
   /\
   match t with
@@ -85,15 +83,92 @@ Fixpoint wf (t: Ty) : Prop :=
   | TBool => True
   | TPtr _ _ => True
   | TTuple fields size => fields_fit_size fields size
-                      /\ fields_wf fields wf
+                      /\ forall f, f < length fields ->
+                           match nth f fields (0,TBool) with
+                           | (start,ty) => wf ty
+                           end
                       /\ fields_disjoint fields
   | TArray elem_ty count => wf elem_ty
                         /\ (count >= 0)%Z
   | TUnion fields chunks size => fields_fit_size fields size
-                             /\ fields_wf fields wf
+                             /\   forall f, f < length fields ->
+                                  match nth f fields (0,TBool) with
+                                  | (start,ty) => wf ty
+                                  end
                              /\ fields_in_chunks fields chunks
-                             /\ chunks_sorted_and_disjoint chunks
+                             /\ chunks_disjoint chunks
+                             /\ chunks_sorted chunks
                              /\ chunks_fit_size chunks size
   end.
+
+
+(* prove of the well-formedness of the recursion within wf: *)
+
+Lemma wf_helper {a i l}
+  (H1: i < length l)
+  (H2: nth i l 0 = a):
+  a < S (list_max l).
+Proof.
+assert (a <= list_max l); cycle 1. { lia. }
+assert (In a l).
+{ rewrite <- H2. apply (nth_In l 0 H1). }
+
+clear H2 H1 i.
+destruct (Nat.leb_spec a (list_max l)). { auto. }
+destruct l. { simpl in H. contradict H. }
+
+assert (Forall (fun x => x < a) (n::l)). {
+  apply list_max_lt. { intros A. discriminate A. }
+  auto.
+}
+
+assert (forall x, In x (n::l) -> x < a). {
+  apply Forall_forall.
+  auto.
+}
+
+assert (a < a). { apply (H2 _ H). }
+lia.
+Qed.
+
+Next Obligation.
+simpl (ty_depth (TTuple fields size)).
+destruct (Nat.ltb_spec f (length fields)); cycle 1. {
+  rewrite nth_overflow in Heq_anonymous.
+  inversion Heq_anonymous.
+  simpl. lia. auto.
+}
+
+assert (f < length ((map (fun x : Size * Ty => ty_depth (snd x)) fields))).
+{ rewrite map_length. auto. }
+
+apply (wf_helper H0).
+set (f_ := (fun x : Size * Ty => ty_depth (snd x))).
+replace 0 with ( f_ (0,TBool)); cycle 1.
+{ simpl. auto. }
+
+rewrite map_nth.
+replace ((nth f fields (0, TBool))) with (start, ty); auto.
+Qed.
+
+Next Obligation.
+simpl (ty_depth (TUnion fields chunks size)).
+destruct (Nat.ltb_spec f (length fields)); cycle 1. {
+  rewrite nth_overflow in Heq_anonymous.
+  inversion Heq_anonymous.
+  simpl. lia. auto.
+}
+
+assert (f < length ((map (fun x : Size * Ty => ty_depth (snd x)) fields))).
+{ rewrite map_length. auto. }
+
+apply (wf_helper H0).
+set (f_ := (fun x : Size * Ty => ty_depth (snd x))).
+replace 0 with ( f_ (0,TBool)); cycle 1.
+{ simpl. auto. }
+
+rewrite map_nth.
+replace ((nth f fields (0, TBool))) with (start, ty); auto.
+Qed.
 
 End wf.

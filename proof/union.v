@@ -21,7 +21,15 @@ Lemma chunks_disjoint_l : ForallOrdPairs interval_pair_sorted_disjoint chunks.
 apply Hwf.
 Qed.
 
-(* return (chunk_index, offset of that chunk, len of that chunk, data of that chunk (taken from `data`) *)
+Lemma fold_left_step {A B} (f: A -> B -> A) x l a :
+fold_left f (x::l) a = fold_left f l (f a x).
+Proof.
+simpl.
+auto.
+Qed.
+
+(* returns the chunk the idx'th byte belongs to, or None if it is not part of a chunk *)
+(* return (chunk_index, offset of that chunk, len of that chunk, data of that chunk) *)
 (* can be called with `data = []` if you don't care for the data *)
 Definition get_chunk (idx: nat) (data: list (list AbstractByte)): option (nat * Size * Size * list AbstractByte) :=
   (fix get_chunk cs data i :=
@@ -35,21 +43,8 @@ Definition get_chunk (idx: nat) (data: list (list AbstractByte)): option (nat * 
     end
   ) chunks data 0.
 
-(*
-Lemma chunk_some {idx i offset len d} (H: get_chunk_id idx = Some (i,offset,len,d)) :
-  | (offset,len) => offset <= idx /\ idx <= offset + len
-  end.
-Admitted.
-
-Lemma chunk_none {idx} (H: get_chunk_id idx = None) :
-  forall i, i < length chunks ->
-  match nth i chunks (size+1,0) with
-  | (offset,len) => offset > idx \/ idx > offset + len
-  end.
-Admitted.
-*)
-
-Lemma encode_helper {data}
+(* TODO add similar decode eqn *)
+Lemma encode_eqn {data}
   (Hc : forallb check_chunk_size (combine chunks data) = true)
   (Hlen : length data = length chunks) :
 forall i, i < size ->
@@ -70,6 +65,15 @@ unfold get_chunk.
 induction chunks as [|c cs IH].
 { simpl. apply nth_repeat. }
 
+destruct c as [offset len].
+destruct ((offset <=? i) && (i <=? offset + len)) eqn:E. {
+  simpl.
+  destruct data as [|d data]. { discriminate Hlen. }
+  simpl (hd _ _).
+  rewrite fold_left_step.
+  simpl.
+  admit.
+}
 Admitted.
 
 (* another approach on proving rt_map by using nth *)
@@ -142,13 +146,6 @@ split. { auto. }
 simpl.
 auto.
 split. { apply (chunk_size_lemma Hlen). }
-auto.
-Qed.
-
-Lemma fold_left_step {A B} (f: A -> B -> A) x l a :
-fold_left f (x::l) a = fold_left f l (f a x).
-Proof.
-simpl.
 auto.
 Qed.
 

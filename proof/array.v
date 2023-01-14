@@ -17,7 +17,10 @@ Notation t := (TArray elem_ty count).
 Context (Hwf: wf t).
 
 Lemma elem_ty_wf : wf elem_ty.
-Proof. inversion Hwf. inversion H0. auto. Qed.
+Proof.
+inversion Hwf.
+auto.
+Qed.
 
 Definition elem_props := props_IH elem_ty_wf.
 
