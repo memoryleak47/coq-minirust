@@ -13,6 +13,65 @@ Context {size: Size}.
 Notation t := (TUnion fields chunks size).
 Context (Hwf: wf t).
 
+Definition get_chunk_id (idx: nat) : option (nat * Size * Size) :=
+  (fix get_chunk cs i :=
+    match cs with
+    | [] => None
+    | (offset,len)::cs' =>
+      if ((offset <=? idx) && (idx <=? offset + len)) then
+        Some (i, offset, len)
+      else
+        get_chunk cs' (S i)
+      end
+  ) chunks 0.
+
+Definition get_chunk_d (idx: nat) (data: list (list AbstractByte)) : option (nat * Size * Size * list AbstractByte) :=
+  get_chunk_id idx
+  o-> (fun tup =>
+    match tup with
+    | (i,offset,len) => (i,offset,len,nth i data [])
+    end
+  ).
+
+Lemma chunk_some {idx i offset len} (H: get_chunk_id idx = Some (i,offset,len)) :
+  i < length chunks /\
+  match nth i chunks (size+1,0) with
+  | (offset,len) => offset <= idx /\ idx <= offset + len
+  end.
+Admitted.
+
+Lemma chunk_none {idx} (H: get_chunk_id idx = None) :
+  forall i, i < length chunks ->
+  match nth i chunks (size+1,0) with
+  | (offset,len) => offset > idx \/ idx > offset + len
+  end.
+Admitted.
+
+Lemma encode_helper {data} :
+forall i, i < size ->
+nth i (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) Uninit
+  = match get_chunk_d i data with
+    | Some tup =>
+      match tup with
+      | (_,offset,len,d) => nth (i-offset) d Uninit
+      end
+    | None => Uninit
+   end.
+Proof.
+Admitted.
+
+(* another approach on proving rt_map by using nth *)
+Lemma rt_map_nth {cs data}
+  (Hc : forallb check_chunk_size (combine cs data) = true)
+  (Hlen : length data = length cs)
+  (Hfit: chunks_fit_size cs size)
+  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
+map (decode_union_chunk
+    (fold_left encode_union_chunk (combine cs data) (mk_uninit size))
+    ) cs = data.
+Admitted.
+
+
 Lemma chunks_fit_size_l : chunks_fit_size chunks size.
 apply Hwf.
 Qed.
