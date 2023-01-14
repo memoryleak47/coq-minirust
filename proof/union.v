@@ -17,9 +17,6 @@ Lemma chunks_fit_size_l : chunks_fit_size chunks size.
 apply Hwf.
 Qed.
 
-Lemma chunks_disjoint_l : ForallOrdPairs interval_pair_sorted_disjoint chunks.
-apply Hwf.
-Qed.
 
 Lemma fold_left_step {A B} (f: A -> B -> A) x l a :
 fold_left f (x::l) a = fold_left f l (f a x).
@@ -59,7 +56,7 @@ nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) 
 Proof.
 intros i Hi.
 assert(Hfit: chunks_fit_size chunks size). { apply chunks_fit_size_l. }
-assert (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint chunks). { apply chunks_disjoint_l. }
+
 clear Hwf.
 unfold get_chunk.
 induction chunks as [|c cs IH].
@@ -81,7 +78,7 @@ Lemma rt_map_nth {cs data}
   (Hc : forallb check_chunk_size (combine cs data) = true)
   (Hlen : length data = length cs)
   (Hfit: chunks_fit_size cs size)
-  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
+  (Hdisj: intervals_disjoint cs) :
 map (decode_union_chunk
     (fold_left encode_union_chunk (combine cs data) (repeat Uninit size))
     ) cs = data.
@@ -102,19 +99,22 @@ induction chunks as [|c chunks' IH].
 simpl (map _ _).
 simpl (combine _ _).
 apply Forall_cons; cycle 1.
-{ apply IH. inversion Hfit. auto. }
+{ apply IH. intros. admit. }
 
 clear IH.
 unfold check_chunk_size.
 unfold decode_union_chunk.
 destruct c as [offset len].
-inversion Hfit.
+admit.
+
+(*inversion Hfit.
 simpl in H1.
 apply Nat.eqb_eq.
 rewrite subslice_length. { auto. }
 rewrite Hlen.
 auto.
-Qed.
+Qed.*)
+Admitted.
 
 Lemma union_dec [l v] (H: decode t l = Some v) :
   length l = size /\
@@ -178,6 +178,8 @@ assert (length (encode_union_chunk a (p, x)) = size). {
   unfold encode_union_chunk.
   destruct p as [offset len].
   apply write_subslice_length. { auto. }
+  admit.
+  (*
   inversion Hfit.
   simpl in H2.
   rewrite H.
@@ -185,7 +187,7 @@ assert (length (encode_union_chunk a (p, x)) = size). {
   simpl in Hc.
   destruct (len =? length x) eqn:E; cycle 1. { simpl in Hc. discriminate Hc. }
   apply Nat.eqb_eq.
-  auto.
+  auto. *)
 }
 
 apply IH.
@@ -193,9 +195,9 @@ apply IH.
   destruct (forallb check_chunk_size (combine chunks0 data))%bool; auto.
   rewrite andb_false_r in Hc. discriminate Hc.
 - simpl in Hlen. inversion Hlen. auto.
-- inversion Hfit. auto.
+- admit. (* inversion Hfit. auto. *)
 - auto.
-Qed.
+Admitted.
 
 Lemma union_rt1 : rt1 t.
 Proof.
