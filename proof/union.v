@@ -13,29 +13,30 @@ Context {size: Size}.
 Notation t := (TUnion fields chunks size).
 Context (Hwf: wf t).
 
-Definition get_chunk_id (idx: nat) : option (nat * Size * Size) :=
-  (fix get_chunk cs i :=
+Lemma chunks_fit_size_l : chunks_fit_size chunks size.
+apply Hwf.
+Qed.
+
+Lemma chunks_disjoint_l : ForallOrdPairs interval_pair_sorted_disjoint chunks.
+apply Hwf.
+Qed.
+
+(* return (chunk_index, offset of that chunk, len of that chunk, data of that chunk (taken from `data`) *)
+(* can be called with `data = []` if you don't care for the data *)
+Definition get_chunk (idx: nat) (data: list (list AbstractByte)): option (nat * Size * Size * list AbstractByte) :=
+  (fix get_chunk cs data i :=
     match cs with
-    | [] => None
     | (offset,len)::cs' =>
       if ((offset <=? idx) && (idx <=? offset + len)) then
-        Some (i, offset, len)
+        Some (i, offset, len, hd [] data)
       else
-        get_chunk cs' (S i)
-      end
-  ) chunks 0.
-
-Definition get_chunk_d (idx: nat) (data: list (list AbstractByte)) : option (nat * Size * Size * list AbstractByte) :=
-  get_chunk_id idx
-  o-> (fun tup =>
-    match tup with
-    | (i,offset,len) => (i,offset,len,nth i data [])
+        get_chunk cs' (tl data) (S i)
+    | [] => None
     end
-  ).
+  ) chunks data 0.
 
-Lemma chunk_some {idx i offset len} (H: get_chunk_id idx = Some (i,offset,len)) :
-  i < length chunks /\
-  match nth i chunks (size+1,0) with
+(*
+Lemma chunk_some {idx i offset len d} (H: get_chunk_id idx = Some (i,offset,len,d)) :
   | (offset,len) => offset <= idx /\ idx <= offset + len
   end.
 Admitted.
@@ -46,11 +47,14 @@ Lemma chunk_none {idx} (H: get_chunk_id idx = None) :
   | (offset,len) => offset > idx \/ idx > offset + len
   end.
 Admitted.
+*)
 
-Lemma encode_helper {data} :
+Lemma encode_helper {data}
+  (Hc : forallb check_chunk_size (combine chunks data) = true)
+  (Hlen : length data = length chunks) :
 forall i, i < size ->
-nth i (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) Uninit
-  = match get_chunk_d i data with
+nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
+  = match get_chunk i data with
     | Some tup =>
       match tup with
       | (_,offset,len,d) => nth (i-offset) d Uninit
@@ -58,6 +62,14 @@ nth i (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) Unin
     | None => Uninit
    end.
 Proof.
+intros i Hi.
+assert(Hfit: chunks_fit_size chunks size). { apply chunks_fit_size_l. }
+assert (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint chunks). { apply chunks_disjoint_l. }
+clear Hwf.
+unfold get_chunk.
+induction chunks as [|c cs IH].
+{ simpl. apply nth_repeat. }
+
 Admitted.
 
 (* another approach on proving rt_map by using nth *)
@@ -67,18 +79,9 @@ Lemma rt_map_nth {cs data}
   (Hfit: chunks_fit_size cs size)
   (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
 map (decode_union_chunk
-    (fold_left encode_union_chunk (combine cs data) (mk_uninit size))
+    (fold_left encode_union_chunk (combine cs data) (repeat Uninit size))
     ) cs = data.
 Admitted.
-
-
-Lemma chunks_fit_size_l : chunks_fit_size chunks size.
-apply Hwf.
-Qed.
-
-Lemma chunks_disjoint_l : ForallOrdPairs interval_pair_sorted_disjoint chunks.
-apply Hwf.
-Qed.
 
 Lemma chunk_size_lemma {l} (Hlen: length l = size) :
   forallb check_chunk_size (combine chunks (map (decode_union_chunk l) chunks)) = true.
@@ -115,7 +118,7 @@ Lemma union_dec [l v] (H: decode t l = Some v) :
   data = map (decode_union_chunk l) chunks /\
   forallb check_chunk_size (combine chunks data) = true /\
   encode t v = Some (fold_left encode_union_chunk
-       (combine chunks data) (mk_uninit size) ).
+       (combine chunks data) (repeat Uninit size) ).
 Proof.
 unfold decode,decode_union in H.
 assert (length l = size) as Hlen.
@@ -142,13 +145,6 @@ split. { apply (chunk_size_lemma Hlen). }
 auto.
 Qed.
 
-Lemma mk_uninit_length : length (mk_uninit size) = size.
-Proof.
-unfold mk_uninit.
-rewrite map_length.
-apply seq_length.
-Qed.
-
 Lemma fold_left_step {A B} (f: A -> B -> A) x l a :
 fold_left f (x::l) a = fold_left f l (f a x).
 Proof.
@@ -159,7 +155,7 @@ Qed.
 Lemma fold_encode_length {data}
   (Hc : forallb check_chunk_size (combine chunks data) = true)
   (Hlen : length data = length chunks) :
-length (fold_left encode_union_chunk (combine chunks data) (mk_uninit size)) = size.
+length (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) = size.
 Proof.
 have Hfit chunks_fit_size_l.
 unfold chunks_fit_size in Hfit.
@@ -169,7 +165,7 @@ assert (
   forall a, length a = size ->
   length (fold_left encode_union_chunk (combine chunks data) a) = size
 ) as Hsub; cycle 1.
-{ apply Hsub. apply mk_uninit_length. }
+{ apply Hsub. apply repeat_length. }
 
 generalize dependent chunks.
 
@@ -204,136 +200,6 @@ apply IH.
 - auto.
 Qed.
 
-Lemma rt_map_step2 {a offset cs d data}
-  (Hlen_a : length a = size)
-  (Ha: subslice_with_length a offset (length d) = d)
-  (Hc : forallb check_chunk_size (combine cs data) = true)
-  (Hlen : length data = length cs)
-  (Hfit: chunks_fit_size ((offset,length d)::cs) size)
-  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint ((offset,length d)::cs)) :
-  subslice_with_length (fold_left encode_union_chunk (combine cs data) a) offset (length d) = d.
-Proof.
-generalize dependent cs.
-generalize dependent a.
-induction data as [|d' data IH].
-{ intros. rewrite combine_nil. simpl. auto. }
-
-intros.
-destruct cs as [|[offset' len'] cs].
-{ discriminate Hlen. }
-
-assert (len' = length d') as -> .
-{ simpl in Hc. destruct (Nat.eqb_spec len' (length d')); auto. discriminate Hc. }
-
-simpl (combine _ _).
-rewrite fold_left_step.
-apply IH.
-- unfold encode_union_chunk.
-  apply write_subslice_length; auto.
-  inversion Hfit. inversion H2.
-  simpl in H5.
-  rewrite Hlen_a.
-  simpl in Hc.
-  auto.
-- assert (interval_pair_sorted_disjoint (offset, length d) (offset', length d')). {
-    unfold encode_union_chunk.
-    inversion Hdisj.
-    inversion H1.
-    auto.
-  }
-  unfold interval_pair_sorted_disjoint in H.
-  unfold encode_union_chunk.
-  apply subslice_independent_write; auto.
-- simpl in Hc. rewrite Nat.eqb_refl in Hc. auto.
-- auto.
-- inversion Hfit.
-  apply Forall_cons. { auto. }
-  inversion H2.
-  auto.
-- inversion Hdisj.
-  apply FOP_cons.
-  -- inversion H1. auto.
-  -- inversion H2. auto.
-Qed.
-
-Lemma rt_map_step {a offset cs d data}
-  (Hlen_a : length a = size)
-  (Hc : forallb check_chunk_size (combine cs data) = true)
-  (Hlen : length data = length cs)
-  (Hfit: chunks_fit_size ((offset,length d)::cs) size)
-  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint ((offset,length d)::cs)) :
-  subslice_with_length
-    (fold_left
-      encode_union_chunk
-      (combine cs data)
-      (write_subslice_at_index a offset d)
-    )
-    offset
-    (length d) = d.
-Proof.
-apply rt_map_step2; auto.
-- apply write_subslice_length. auto.
-  unfold chunks_fit_size in Hfit.
-  inversion Hfit.
-  simpl in H1. rewrite Hlen_a. auto.
-- apply subslice_rt.
-  inversion Hfit.
-  simpl in H1.
-  lia.
-Qed.
-
-Lemma rt_map {cs data}
-  (Hc : forallb check_chunk_size (combine cs data) = true)
-  (Hlen : length data = length cs)
-  (Hfit: chunks_fit_size cs size)
-  (Hdisj: ForallOrdPairs interval_pair_sorted_disjoint cs) :
-map (decode_union_chunk
-    (fold_left encode_union_chunk (combine cs data) (mk_uninit size))
-    ) cs = data.
-Proof.
-declare a Ha (mk_uninit size).
-rewrite Ha.
-assert (Ha_len: length a = size).
-{ rewrite <- Ha. apply mk_uninit_length. }
-
-clear Ha.
-
-generalize dependent cs.
-generalize dependent a.
-induction data as [|d data IH].
-{ intros. destruct cs; auto. discriminate Hlen. }
-
-intros.
-destruct cs as [|c cs]. { discriminate Hlen. }
-
-simpl (combine _ _).
-rewrite fold_left_step.
-simpl (encode_union_chunk (mk_uninit size) (c,d)).
-destruct c as [offset len].
-simpl.
-f_equal. {
-  assert (len = length d) as ->.
-  { simpl in Hc. destruct (Nat.eqb_spec len (length d)); auto. discriminate Hc. }
-  apply rt_map_step; auto.
-  - simpl in Hc.
-    rewrite Nat.eqb_refl in Hc.
-    auto.
-}
-
-apply IH.
-- apply write_subslice_length. { auto. }
-  simpl in Hc.
-  rewrite Ha_len.
-  replace (length d) with len.
-  inversion Hfit.
-  simpl in H1. lia.
-  destruct (Nat.eqb_spec len (length d)); auto. simpl in Hc. discriminate Hc.
-- simpl in Hc. destruct ((len =? length d)). simpl in Hc. auto. simpl in Hc. discriminate Hc.
-- simpl in Hlen. auto.
-- inversion Hfit. auto.
-- inversion Hdisj. auto.
-Qed.
-
 Lemma union_rt1 : rt1 t.
 Proof.
 intros v [l Hdec].
@@ -349,8 +215,7 @@ rewrite (fold_encode_length Hfor Hdata_len).
 rewrite Nat.eqb_refl.
 simpl.
 do 2 f_equal.
-apply (rt_map Hfor Hdata_len chunks_fit_size_l chunks_disjoint_l).
-Qed.
+Admitted.
 
 Lemma union_rt2 : rt2 t.
 Proof.

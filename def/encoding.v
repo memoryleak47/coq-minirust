@@ -139,8 +139,6 @@ Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecod
   >>= assuming_const (Z.of_nat (length l) =? full_size)%Z
   o-> VTuple.
 
-Definition mk_uninit (size: Size) := map (fun _ => Uninit) (seq 0 size).
-
 (* tuples *)
 Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
   let f := fix f (l: list AbstractByte) (fields: Fields) (vals: list Value) : option (list AbstractByte) :=
@@ -157,7 +155,7 @@ Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Enc
     end
   in
 
-  let uninit := mk_uninit size in
+  let uninit := repeat Uninit size in
 
   match v with
   | VTuple vals => f uninit fields vals
@@ -189,7 +187,7 @@ Definition check_chunk_size (chunk: (Size * Size) * list AbstractByte) :=
   end.
 
 Definition encode_union (fields: Fields) (chunks: Chunks) (size: Size) (v: Value) : option (list AbstractByte) :=
-  let uninit := mk_uninit size in
+  let uninit := repeat Uninit size in
 
   match v with
   | VUnion chunks_data => Some chunks_data
