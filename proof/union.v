@@ -316,7 +316,21 @@ Lemma union_mono2 : mono2 t.
 Admitted.
 
 Lemma union_encode_len : encode_len t.
-Admitted.
+Proof.
+intros v l Henc.
+unfold encode,encode_union in Henc.
+destruct v; try discriminate Henc.
+unfold assuming in Henc.
+simpl in Henc.
+destruct (length l0 =? length chunks) eqn:Hlen; try discriminate Henc.
+simpl in Henc.
+destruct (forallb check_chunk_size (combine chunks l0)) eqn:Hcheck; try discriminate Henc.
+simpl in Henc.
+inversion Henc.
+apply fold_encode_length; auto.
+destruct (Nat.eqb_spec (length l0) (length chunks)); auto.
+discriminate Hlen.
+Qed.
 
 Lemma union_props : Props t.
 Proof.
