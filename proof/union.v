@@ -2,6 +2,7 @@ From Minirust.def Require Import ty encoding thm wf le utils.
 From Minirust.proof Require Import defs.
 From Minirust.proof.lemma Require Import utils subslice.
 Require Import List Nat PeanoNat Bool Lia.
+Import ListNotations.
 
 Section union.
 
@@ -293,9 +294,22 @@ apply (rt_map Hfor Hdata_len chunks_fit_size_l chunks_disjoint_l).
 Qed.
 
 Lemma union_rt2 : rt2 t.
+Proof.
+intros l v Hdec.
+destruct (union_dec Hdec) as (Hlen & data & -> & Hdata & Hfor & Henc).
+eexists _.
+split. { apply Henc. }
+(* it seems like we need another large Lemma like rt_map for this. Maybe we can re-use it somehow? *)
 Admitted.
 
 Lemma union_mono1 : mono1 t.
+Proof.
+intros v1 v2 Hle [l1 Hdec1] [l2 Hdec2].
+destruct (union_dec Hdec1) as (Hlen1 & data1 & -> & Hdata1 & Hfor1 & Henc1).
+destruct (union_dec Hdec2) as (Hlen2 & data2 & -> & Hdata2 & Hfor2 & Henc2).
+eexists _, _.
+split. { apply Henc1. }
+split. { apply Henc2. }
 Admitted.
 
 Lemma union_mono2 : mono2 t.
