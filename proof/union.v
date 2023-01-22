@@ -286,6 +286,11 @@ do 2 f_equal.
 apply (rt_map Hfor Hdata_len chunks_fit_size_l chunks_disjoint_l).
 Qed.
 
+Definition contains i (interval: nat * nat) := (
+  (fst interval <=? i) &&
+  (i <? fst interval + snd interval)
+).
+
 Lemma union_rt2 : rt2 t.
 Proof.
 intros l v Hdec.
@@ -300,6 +305,9 @@ apply (le_nth Uninit). { rewrite Hlen_enc. auto. }
 
 intros i Hi.
 rewrite Hlen_enc in Hi.
+destruct (existsb (contains i) chunks) eqn:Hex.
+- Check existsb_exists. admit.
+- Check existsb_nth. admit.
 (* TODO *)
 Admitted.
 
