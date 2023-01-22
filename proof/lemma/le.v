@@ -1,5 +1,5 @@
 From Minirust.def Require Import ty le.
-Require Import Datatypes Coq.Init.Byte List.
+Require Import Datatypes Coq.Init.Byte List Lia.
 Import ListNotations.
 
 Section le.
@@ -127,6 +127,32 @@ f_equal.
 apply IH.
 inversion H.
 auto.
+Qed.
+
+Lemma le_nth [T] {l1 l2 : list T} {_: DefinedRelation T}
+  (default: T)
+  (Hlen : length l1 = length l2)
+  (H : forall i, i < length l1 -> le (nth i l1 default) (nth i l2 default)) :
+le l1 l2.
+Proof.
+generalize dependent l2.
+induction l1 as [|x1 l1 IH].
+{ intros. destruct l2; try discriminate Hlen. simpl. auto. }
+
+intros.
+destruct l2 as [|x2 l2].
+{ simpl in Hlen. discriminate Hlen. }
+
+simpl.
+split.
+{ apply (H 0). simpl. lia. }
+
+apply IH.
+{ simpl in Hlen. inversion Hlen. auto. }
+
+intros.
+apply (H (S i)).
+simpl. lia.
 Qed.
 
 End le.

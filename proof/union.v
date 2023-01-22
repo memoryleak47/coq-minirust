@@ -1,6 +1,6 @@
 From Minirust.def Require Import ty encoding thm wf le utils.
 From Minirust.proof Require Import defs.
-From Minirust.proof.lemma Require Import utils subslice.
+From Minirust.proof.lemma Require Import utils subslice le.
 Require Import List Nat PeanoNat Bool Lia.
 Import ListNotations.
 
@@ -292,7 +292,15 @@ intros l v Hdec.
 destruct (union_dec Hdec) as (Hlen & data & -> & Hdata & Hfor & Henc).
 eexists _.
 split. { apply Henc. }
-(* it seems like we need another large Lemma like rt_map for this. Maybe we can re-use it somehow? *)
+
+assert (length (fold_left encode_union_chunk (combine chunks data)
+        (repeat Uninit size)) = size) as Hlen_enc.
+{ rewrite fold_encode_length; auto. rewrite Hdata. apply map_length. }
+apply (le_nth Uninit). { rewrite Hlen_enc. auto. }
+
+intros i Hi.
+rewrite Hlen_enc in Hi.
+(* TODO *)
 Admitted.
 
 Lemma union_mono1 : mono1 t.
