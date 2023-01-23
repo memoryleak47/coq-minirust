@@ -17,6 +17,31 @@ Lemma chunks_fit_size_l : chunks_fit_size chunks size.
 apply Hwf.
 Qed.
 
+Lemma chunks_fit_size_nth j :
+  let (offset,len) := nth j chunks (0, 0) in
+  size >= offset + len.
+Proof.
+have H chunks_fit_size_l.
+clear - chunks H.
+generalize dependent chunks.
+induction j as [|j IH].
+{ intros.
+  destruct chunks0. { simpl. lia. }
+  simpl. destruct p as [off len].
+  inversion H.
+  simpl in H2.
+  auto.
+}
+
+intros.
+destruct chunks0. { simpl. lia. }
+simpl.
+apply IH.
+inversion H.
+auto.
+Qed.
+
+
 Lemma chunks_disjoint_l : ForallOrdPairs interval_pair_sorted_disjoint chunks.
 apply Hwf.
 Qed.
@@ -307,12 +332,6 @@ Lemma fold_encode_nth_miss {data i}
   (Hfor : forallb check_chunk_size (combine chunks data) = true) :
 nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
 = Uninit.
-Admitted.
-
-Lemma chunks_fit_size_nth j :
-  let (offset,len) := nth j chunks (0, 0) in
-  size >= offset + len.
-Proof.
 Admitted.
 
 Lemma union_rt2 : rt2 t.
