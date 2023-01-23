@@ -117,9 +117,28 @@ assert (Nat.min (length d) (offset' - offset) = length d) as ->. { lia. }
 auto.
 Qed.
 
+Lemma firstn_nth {T i def n} {l: list T}
+  (H1 : n > i)
+  (H2 : length l > i) :
+nth i (firstn n l) def = nth i l def.
+Proof.
+Admitted.
+
+Lemma skipn_nth {T i def n} {l: list T}
+  (H : length l > i+n) :
+nth i (skipn n l) def = nth (i+n) l def.
+Proof.
+Admitted.
+
 Lemma subslice_nth {T offset len i} {l: list T} def
   (Hi: i < len)
   (H: length l >= offset + len) :
   nth i (subslice_with_length l offset len) def = nth (i+offset) l def.
 Proof.
-Admitted.
+unfold subslice_with_length.
+rewrite firstn_nth; try lia; cycle 1.
+{ rewrite skipn_length. lia. }
+
+rewrite skipn_nth; try lia.
+auto.
+Qed.
