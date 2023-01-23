@@ -116,3 +116,10 @@ rewrite firstn_firstn.
 assert (Nat.min (length d) (offset' - offset) = length d) as ->. { lia. }
 auto.
 Qed.
+
+Lemma subslice_nth {T offset len i} {l: list T} def
+  (Hi: i < len)
+  (H: length l >= offset + len) :
+  nth i (subslice_with_length l offset len) def = nth (i+offset) l def.
+Proof.
+Admitted.

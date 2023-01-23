@@ -291,6 +291,30 @@ Definition contains i (interval: nat * nat) := (
   (i <? fst interval + snd interval)
 ).
 
+Lemma fold_encode_nth_hit {data i j}
+  (H : contains i (nth j chunks (0,0)) = true)
+  (Hdlen : length data = length chunks)
+  (Hfor : forallb check_chunk_size (combine chunks data) = true) :
+let data_ := nth j data [] in
+let chunk_ := nth j chunks (0,0) in
+nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
+= nth (i-fst chunk_) data_ Uninit.
+Admitted.
+
+Lemma fold_encode_nth_miss {data i}
+  (H : existsb (contains i) chunks = false)
+  (Hdlen : length data = length chunks)
+  (Hfor : forallb check_chunk_size (combine chunks data) = true) :
+nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
+= Uninit.
+Admitted.
+
+Lemma chunks_fit_size_nth j :
+  let (offset,len) := nth j chunks (0, 0) in
+  size >= offset + len.
+Proof.
+Admitted.
+
 Lemma union_rt2 : rt2 t.
 Proof.
 intros l v Hdec.
@@ -305,11 +329,43 @@ apply (le_nth Uninit). { rewrite Hlen_enc. auto. }
 
 intros i Hi.
 rewrite Hlen_enc in Hi.
-destruct (existsb (contains i) chunks) eqn:Hex.
-- Check existsb_exists. admit.
-- Check existsb_nth. admit.
-(* TODO *)
-Admitted.
+assert (length data = length chunks) as Hdlen.
+{ rewrite Hdata. apply map_length. }
+
+destruct (existsb (contains i) chunks) eqn:Hex; cycle 1. {
+  rewrite (fold_encode_nth_miss Hex Hdlen Hfor).
+  simpl. auto.
+}
+
+destruct (proj1 (existsb_exists _ _) Hex) as (chunk & Hin & Hcont).
+destruct (In_nth _ _ (0,0) Hin) as [j [Hj Hnth]].
+assert (contains i (nth j chunks (0,0)) = true).
+{ rewrite <- Hnth in Hcont. auto. }
+
+rewrite (fold_encode_nth_hit H Hdlen Hfor).
+assert ((nth (i - fst (nth j chunks (0, 0)))
+   (nth j data []) Uninit) = nth i l Uninit); cycle 1.
+{ rewrite H0. apply le_abstract_byte_refl. }
+
+rewrite Hdata.
+replace ([]) with (decode_union_chunk l (0,0)); cycle 1.
+{ simpl. rewrite (subslice_zero l). simpl. auto. }
+rewrite map_nth.
+(* why does rewrite not work here? *)
+assert (nth j chunks (0, 0) = chunk) as ->. { auto. }
+unfold decode_union_chunk.
+destruct chunk as [off len]. simpl.
+unfold contains in Hcont. simpl in Hcont.
+destruct (andb_prop _ _ Hcont) as [Hi_off Hi_range].
+assert (off <= i). { apply Nat.leb_le. auto. }
+assert (i < off + len). { apply Nat.ltb_lt. auto. }
+rewrite subslice_nth; try lia.
+{ f_equal. lia. }
+
+rewrite Hlen.
+have A (chunks_fit_size_nth j).
+replace (nth j chunks (0,0)) with (off, len) in A. { auto. }
+Qed.
 
 Lemma union_mono1 : mono1 t.
 Proof.
