@@ -122,13 +122,42 @@ Lemma firstn_nth {T i def n} {l: list T}
   (H2 : length l > i) :
 nth i (firstn n l) def = nth i l def.
 Proof.
-Admitted.
+generalize dependent i.
+generalize dependent n.
+induction l as [|x l IH].
+{ intros. simpl in H2. lia. }
+
+intros.
+destruct i as [|i].
+{ simpl. destruct n; try lia. simpl. auto. }
+
+simpl.
+destruct n eqn:Hn. { lia. }
+
+simpl.
+apply IH; auto; try lia.
+simpl in H2. lia.
+Qed.
 
 Lemma skipn_nth {T i def n} {l: list T}
   (H : length l > i+n) :
 nth i (skipn n l) def = nth (i+n) l def.
 Proof.
-Admitted.
+generalize dependent i.
+generalize dependent n.
+induction l as [|x l IH].
+{ intros. simpl in H. lia. }
+
+intros.
+destruct n as [|n].
+{ simpl (skipn 0 _). f_equal. lia. }
+
+assert (i + S n = S (i+n)) as ->. { lia. }
+simpl.
+apply IH.
+simpl in H.
+lia.
+Qed.
 
 Lemma subslice_nth {T offset len i} {l: list T} def
   (Hi: i < len)
