@@ -1,4 +1,4 @@
-Require Import List Lia.
+Require Import List Lia Nat PeanoNat Bool.
 Import ListNotations.
 From Minirust.def Require Import encoding utils.
 From Minirust.proof.lemma Require Import utils.
@@ -177,11 +177,49 @@ Lemma subslice_write_nth_hit {T} {i def offset} {d a: list T}
 (Hdep : contains i (offset, length d) = true) :
 nth i (write_subslice_at_index a offset d) def = nth (i-offset) d def.
 Proof.
-Admitted.
+unfold write_subslice_at_index.
+unfold contains in Hdep.
+simpl in Hdep.
+destruct (andb_prop _ _ Hdep) as [Hdep1 Hdep2].
+assert (offset <= i). { destruct (Nat.leb_spec offset i); auto; lia. }
+assert (i < offset + length d). { destruct (Nat.ltb_spec i (offset + length d)); auto; lia. }
+rewrite app_nth2; cycle 1.
+{ rewrite firstn_length. lia. }
+
+rewrite firstn_length.
+assert (min offset (length a) = offset) as ->. { lia. }
+
+rewrite app_nth1; cycle 1. { lia. }
+auto.
+Qed.
 
 Lemma subslice_write_nth_miss {T} {i def offset} {d a: list T}
 (Hrange: offset + length d <= length a)
 (Hindep : contains i (offset, length d) = false) :
 nth i (write_subslice_at_index a offset d) def = nth i a def.
 Proof.
-Admitted.
+unfold contains in Hindep.
+unfold write_subslice_at_index.
+destruct (andb_false_elim _ _ Hindep).
+(* case `i < offset` *)
+{
+  simpl in e.
+  assert (i < offset). { destruct (Nat.leb_spec offset i); auto; lia. }
+  rewrite app_nth1; cycle 1. { rewrite firstn_length. lia. }
+  apply firstn_nth; lia.
+}
+
+simpl in e.
+assert (i >= offset + length d). { destruct (Nat.ltb_spec i (offset+length d)); auto; lia. }
+rewrite app_nth2; cycle 1. { rewrite firstn_length. lia. }
+rewrite app_nth2; cycle 1. { rewrite firstn_length. lia. }
+rewrite firstn_length.
+assert (min offset (length a) = offset) as ->. { lia. }
+destruct (Nat.ltb_spec (i - offset - length d) (length (skipn (offset + length d) a))).
+{ rewrite skipn_nth; cycle 1. rewrite skipn_length in H0. lia. f_equal. lia. }
+
+rewrite nth_overflow; cycle 1. { lia. }
+rewrite nth_overflow; auto.
+rewrite skipn_length in H0.
+lia.
+Qed.
