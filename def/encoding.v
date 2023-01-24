@@ -140,8 +140,8 @@ Definition decode_array (elem: Ty) (count: Int) (l: list AbstractByte) (subdecod
   o-> VTuple.
 
 (* tuples *)
-Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
-  let f := fix f (l: list AbstractByte) (fields: Fields) (vals: list Value) : option (list AbstractByte) :=
+Definition encode_tuple_fields (l: list AbstractByte) (fields: Fields) (subencode: Encoder) (vals: list Value) :=
+  (fix f l fields vals :=
     match (fields,vals) with
     | ((offset, sub_ty)::fields', v::vals') =>
       (subencode sub_ty v)
@@ -149,18 +149,18 @@ Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Enc
         let l' := write_subslice_at_index l offset bytes in
         f l' fields' vals'
       )
-    | (_::_,[]) => None
-    | ([],_::_) => None
-    | ([],[]) => Some l
-    end
-  in
+    | _ => Some l
+    end) l fields vals.
 
+Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Encoder) : option (list AbstractByte) :=
   let uninit := repeat Uninit size in
 
   match v with
-  | VTuple vals => f uninit fields vals
+  | VTuple vals => Some vals
   | _ => None
-  end.
+  end
+  >>= assuming (fun vals => length vals =? length fields)
+  >>= encode_tuple_fields uninit fields subencode.
 
 Definition decode_tuple_field (subdecode: Decoder) (l: list AbstractByte) (field: Size * Ty) :=
   let (offset, sub_ty) := field in
