@@ -155,4 +155,28 @@ apply (H (S i)).
 simpl. lia.
 Qed.
 
+Lemma le_nth_rev {T j} {l1 l2: list T} {_: DefinedRelation T}
+  (default: T)
+  {refl: forall (x: T), le x x}
+  (H: le l1 l2)
+  : le (nth j l1 default) (nth j l2 default).
+Proof.
+generalize dependent l2.
+generalize dependent j.
+induction l1 as [|x1 l1 IH].
+{ intros. destruct l2; try contradiction H. apply refl. }
+
+intros.
+destruct l2 as [|x2 l2].
+{ simpl in H. contradict H. }
+
+destruct j.
+{ inversion H. simpl. auto. }
+
+simpl.
+apply IH.
+inversion H.
+auto.
+Qed.
+
 End le.

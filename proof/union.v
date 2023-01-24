@@ -567,7 +567,46 @@ destruct (union_dec Hdec2) as (Hlen2 & data2 & -> & Hdata2 & Hfor2 & Henc2).
 eexists _, _.
 split. { apply Henc1. }
 split. { apply Henc2. }
-Admitted.
+
+assert (length data1 = length chunks) as Hd1.
+{ rewrite Hdata1. apply map_length. }
+
+assert (length data2 = length chunks) as Hd2.
+{ rewrite Hdata2. apply map_length. }
+
+assert (length (fold_left encode_union_chunk (combine chunks data1) (repeat Uninit size)) = size) as Hdlen1.
+{ rewrite fold_encode_length; auto. }
+
+assert (length (fold_left encode_union_chunk (combine chunks data2) (repeat Uninit size)) = size) as Hdlen2.
+{ rewrite fold_encode_length; auto. }
+
+apply (le_nth Uninit). { lia. }
+
+intros i Hi.
+rewrite Hdlen1 in Hi.
+
+destruct (existsb (contains i) chunks) eqn:Hex; cycle 1. {
+  rewrite fold_encode_nth_miss; auto.
+  rewrite fold_encode_nth_miss; auto.
+  simpl. auto.
+}
+
+destruct (proj1 (existsb_exists _ _) Hex) as (chunk & Hin & Hcont).
+destruct (In_nth _ _ (0,0) Hin) as [j [Hj Hnth]].
+assert (contains i (nth j chunks (0,0)) = true).
+{ rewrite <- Hnth in Hcont. auto. }
+
+rewrite (fold_encode_nth_hit Hj H Hd1 Hfor1).
+rewrite (fold_encode_nth_hit Hj H Hd2 Hfor2).
+
+unfold le,Value_DefinedRelation in Hle.
+destruct (nth j chunks (0,0)) as [off len].
+simpl (fst _).
+
+apply le_nth_rev. { apply le_abstract_byte_refl. }
+apply le_nth_rev. { apply le_list_abstract_byte_refl. }
+auto.
+Qed.
 
 Lemma union_mono2 : mono2 t.
 Admitted.
