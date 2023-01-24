@@ -171,3 +171,17 @@ rewrite firstn_nth; try lia; cycle 1.
 rewrite skipn_nth; try lia.
 auto.
 Qed.
+
+Lemma subslice_write_nth_hit {T} {i def offset} {d a: list T}
+(Hrange: offset + length d <= length a)
+(Hdep : contains i (offset, length d) = true) :
+nth i (write_subslice_at_index a offset d) def = nth (i-offset) d def.
+Proof.
+Admitted.
+
+Lemma subslice_write_nth_miss {T} {i def offset} {d a: list T}
+(Hrange: offset + length d <= length a)
+(Hindep : contains i (offset, length d) = false) :
+nth i (write_subslice_at_index a offset d) def = nth i a def.
+Proof.
+Admitted.

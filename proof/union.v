@@ -311,12 +311,8 @@ do 2 f_equal.
 apply (rt_map Hfor Hdata_len chunks_fit_size_l chunks_disjoint_l).
 Qed.
 
-Definition contains i (interval: nat * nat) := (
-  (fst interval <=? i) &&
-  (i <? fst interval + snd interval)
-).
-
 Lemma fold_encode_nth_hit {data i j}
+  (Hj: j < length chunks)
   (H : contains i (nth j chunks (0,0)) = true)
   (Hdlen : length data = length chunks)
   (Hfor : forallb check_chunk_size (combine chunks data) = true) :
@@ -332,7 +328,62 @@ Lemma fold_encode_nth_miss {data i}
   (Hfor : forallb check_chunk_size (combine chunks data) = true) :
 nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
 = Uninit.
-Admitted.
+Proof.
+assert (forall a, nth i a Uninit = Uninit /\ length a = size -> nth i
+  (fold_left encode_union_chunk (combine chunks data)
+     a) Uninit = Uninit); cycle 1. {
+  apply H0.
+  split. { apply nth_repeat. }
+  apply repeat_length.
+}
+
+have Hfit chunks_fit_size_l.
+clear Hwf.
+
+generalize dependent data.
+induction chunks as [|c ch IH].
+{ intros. simpl. inversion H0. auto. }
+
+destruct c as [off len].
+intros.
+destruct data as [|d data].
+{ simpl in Hdlen. lia. }
+
+simpl.
+
+assert (length d = len) as Hdlen'. {
+  simpl in Hfor.
+  destruct (andb_prop _ _ Hfor) as [HX _].
+  destruct (Nat.eqb_spec len (length d)); auto.
+  lia.
+}
+
+assert (off + length d <= length a). {
+  rewrite Hdlen'.
+  assert (length a = size) as ->. { inversion H0. auto. }
+  inversion Hfit.
+  auto.
+}
+
+apply IH.
+{ simpl in H. destruct (orb_false_elim _ _ H). auto. }
+{ inversion Hfit. auto. }
+{ simpl in Hdlen. lia. }
+{ simpl in Hfor. apply (andb_prop _ _ Hfor). }
+split; cycle 1. {
+  apply write_subslice_length; lia.
+}
+
+assert (contains i (off, length d) = false). {
+  simpl in H.
+  destruct (orb_false_elim _ _ H).
+  rewrite Hdlen'.
+  auto.
+}
+
+rewrite subslice_write_nth_miss; auto.
+{ inversion H0. auto. }
+Qed.
 
 Lemma union_rt2 : rt2 t.
 Proof.
@@ -361,7 +412,7 @@ destruct (In_nth _ _ (0,0) Hin) as [j [Hj Hnth]].
 assert (contains i (nth j chunks (0,0)) = true).
 { rewrite <- Hnth in Hcont. auto. }
 
-rewrite (fold_encode_nth_hit H Hdlen Hfor).
+rewrite (fold_encode_nth_hit Hj H Hdlen Hfor).
 assert ((nth (i - fst (nth j chunks (0, 0)))
    (nth j data []) Uninit) = nth i l Uninit); cycle 1.
 { rewrite H0. apply le_abstract_byte_refl. }
