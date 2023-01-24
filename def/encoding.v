@@ -162,18 +162,15 @@ Definition encode_tuple (fields: Fields) (size: Size) (v: Value) (subencode: Enc
   | _ => None
   end.
 
-Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value :=
-  let f := fun arg =>
-    match arg with
-    | (offset, sub_ty) =>
-      let sub_l := subslice_with_length l offset (ty_size sub_ty) in
-      subdecode sub_ty sub_l
-    end
-  in
+Definition decode_tuple_field (subdecode: Decoder) (l: list AbstractByte) (field: Size * Ty) :=
+  let (offset, sub_ty) := field in
+  let sub_l := subslice_with_length l offset (ty_size sub_ty) in
+  subdecode sub_ty sub_l.
 
-  transpose (map f fields)
-  o-> VTuple
-  >>= assuming_const (length l =? size).
+Definition decode_tuple (fields: Fields) (size: Size) (l: list AbstractByte) (subdecode: Decoder) : option Value :=
+  transpose (map (decode_tuple_field subdecode l) fields)
+  >>= assuming_const (length l =? size)
+  o-> VTuple.
 
 (* unions *)
 Definition encode_union_chunk (l: list AbstractByte) (chunk: (Size * Size) * list AbstractByte) :=
