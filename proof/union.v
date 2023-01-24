@@ -311,38 +311,20 @@ do 2 f_equal.
 apply (rt_map Hfor Hdata_len chunks_fit_size_l chunks_disjoint_l).
 Qed.
 
-Lemma fold_encode_nth_hit {data i j}
-  (Hj: j < length chunks)
-  (H : contains i (nth j chunks (0,0)) = true)
-  (Hdlen : length data = length chunks)
-  (Hfor : forallb check_chunk_size (combine chunks data) = true) :
-let data_ := nth j data [] in
-let chunk_ := nth j chunks (0,0) in
-nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
-= nth (i-fst chunk_) data_ Uninit.
-Admitted.
-
-Lemma fold_encode_nth_miss {data i}
-  (H : existsb (contains i) chunks = false)
-  (Hdlen : length data = length chunks)
-  (Hfor : forallb check_chunk_size (combine chunks data) = true) :
-nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
-= Uninit.
+Lemma fold_encode_nth_miss_rest {a cs data i r}
+  (H : existsb (contains i) cs = false)
+  (Ha_len : length a = size)
+  (Ha: nth i a Uninit = r)
+  (Hdlen : length data = length cs)
+  (Hfit: chunks_fit_size cs size)
+  (Hfor : forallb check_chunk_size (combine cs data) = true) :
+nth i (fold_left encode_union_chunk (combine cs data) a) Uninit
+= r.
 Proof.
-assert (forall a, nth i a Uninit = Uninit /\ length a = size -> nth i
-  (fold_left encode_union_chunk (combine chunks data)
-     a) Uninit = Uninit); cycle 1. {
-  apply H0.
-  split. { apply nth_repeat. }
-  apply repeat_length.
-}
-
-have Hfit chunks_fit_size_l.
-clear Hwf.
-
+generalize dependent a.
 generalize dependent data.
-induction chunks as [|c ch IH].
-{ intros. simpl. inversion H0. auto. }
+induction cs as [|c ch IH].
+{ intros. simpl. auto. }
 
 destruct c as [off len].
 intros.
@@ -360,7 +342,7 @@ assert (length d = len) as Hdlen'. {
 
 assert (off + length d <= length a). {
   rewrite Hdlen'.
-  assert (length a = size) as ->. { inversion H0. auto. }
+  assert (length a = size) as ->. { auto. }
   inversion Hfit.
   auto.
 }
@@ -370,9 +352,7 @@ apply IH.
 { inversion Hfit. auto. }
 { simpl in Hdlen. lia. }
 { simpl in Hfor. apply (andb_prop _ _ Hfor). }
-split; cycle 1. {
-  apply write_subslice_length; lia.
-}
+{ apply write_subslice_length; lia. }
 
 assert (contains i (off, length d) = false). {
   simpl in H.
@@ -382,7 +362,149 @@ assert (contains i (off, length d) = false). {
 }
 
 rewrite subslice_write_nth_miss; auto.
-{ inversion H0. auto. }
+Qed.
+
+Lemma fold_encode_nth_miss {data i}
+  (H : existsb (contains i) chunks = false)
+  (Hdlen : length data = length chunks)
+  (Hfor : forallb check_chunk_size (combine chunks data) = true) :
+nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
+= Uninit.
+Proof.
+apply fold_encode_nth_miss_rest; auto.
+{ apply repeat_length. }
+{ apply nth_repeat. }
+{ apply chunks_fit_size_l. }
+Qed.
+
+Lemma fold_encode_nth_hit {data i j}
+  (Hj: j < length chunks)
+  (H : contains i (nth j chunks (0,0)) = true)
+  (Hdlen : length data = length chunks)
+  (Hfor : forallb check_chunk_size (combine chunks data) = true) :
+let data_ := nth j data [] in
+let chunk_ := nth j chunks (0,0) in
+nth i (fold_left encode_union_chunk (combine chunks data) (repeat Uninit size)) Uninit
+= nth (i-fst chunk_) data_ Uninit.
+Proof.
+declare chunk_ Hc (nth j chunks (0,0)).
+declare data_ Hd (nth j data []).
+rewrite Hd,Hc.
+simpl.
+
+have Hfit chunks_fit_size_l.
+have Hdisj chunks_disjoint_l.
+clear Hwf.
+
+(* we need to be generic over a, i.e. (repeat Uninit size) *)
+(* j needs to be decreased in each iteration, hence j needs to be generalize-dep as well *)
+
+assert (forall a, length a = size -> nth i
+  (fold_left encode_union_chunk (combine chunks data)
+     a) Uninit =
+nth (i - fst chunk_) data_ Uninit); cycle 1.
+{ apply H0. apply repeat_length. }
+
+generalize dependent data.
+generalize dependent j.
+induction chunks as [|c cs IH].
+{ intros. simpl in Hj. lia. }
+
+intros.
+destruct data as [|d data].
+{ simpl in Hdlen. lia. }
+
+destruct c as [off len].
+simpl.
+
+assert (len = length d). {
+  simpl in Hfor.
+  destruct (andb_prop _ _ Hfor).
+  destruct (Nat.eqb_spec len (length d)); lia.
+}
+
+(* in this proof, the case j=0 is the hard one. *)
+destruct j as [|j]; cycle 1. {
+  assert (chunks_fit_size cs size) as HA1.
+  { inversion Hfit. auto. }
+
+  assert (ForallOrdPairs interval_pair_sorted_disjoint cs) as HA2.
+  { inversion Hdisj. auto. }
+
+  apply (IH HA1 HA2 j); auto.
+  { simpl in Hj. lia. }
+  { simpl in Hfor.
+    destruct (andb_prop _ _ Hfor).
+    auto.
+  }
+  { apply write_subslice_length; auto. 
+    rewrite H0.
+    inversion Hfit.
+    rewrite <- H1.
+    auto.
+  }
+}
+
+assert (off + length d <= length a). {
+  inversion Hfit.
+  simpl in H4.
+  rewrite <- H1.
+  rewrite H0.
+  auto.
+}
+
+assert (nth i (write_subslice_at_index a off d) Uninit
+      = nth (i - off) d Uninit). {
+  apply subslice_write_nth_hit; auto.
+  simpl in H.
+  rewrite <- H1.
+  auto.
+}
+
+assert (existsb (contains i) cs = false). {
+  simpl in H.
+  clear - cs Hdisj H.
+  induction cs as [|c cs IH]. { simpl. auto. }
+
+  simpl.
+  assert (contains i c = false) as ->. {
+    unfold contains in *.
+    destruct c as [off' len'].
+    inversion Hdisj.
+    inversion H2.
+    unfold interval_pair_sorted_disjoint in H6.
+    simpl in *.
+    clear - H6 off len off' len' i H.
+    assert (off' > i); cycle 1. {
+      destruct (Nat.leb_spec off' i); auto; lia.
+    }
+    destruct (andb_prop _ _ H).
+    assert (off <= i). {
+      destruct (Nat.leb_spec off i); auto; lia.
+    }
+    assert (i < off + len). {
+      destruct (Nat.ltb_spec i (off+len)); auto; lia.
+    }
+    lia.
+  }
+  simpl.
+  apply IH.
+  inversion Hdisj.
+  inversion H2.
+  apply FOP_cons.
+  auto.
+  inversion H3.
+  auto.
+}
+
+apply fold_encode_nth_miss_rest; auto.
+{ apply write_subslice_length; auto. }
+{ assert (fst chunk_ = off) as ->. { simpl in Hc. rewrite <- Hc. auto. }
+  assert (data_ = d) as ->. { simpl in Hd. auto. }
+  auto.
+}
+{ inversion Hfit. auto. }
+{ simpl in Hfor. destruct (andb_prop _ _ Hfor). auto. }
 Qed.
 
 Lemma union_rt2 : rt2 t.
