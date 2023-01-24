@@ -437,7 +437,7 @@ destruct j as [|j]; cycle 1. {
     destruct (andb_prop _ _ Hfor).
     auto.
   }
-  { apply write_subslice_length; auto. 
+  { apply write_subslice_length; auto.
     rewrite H0.
     inversion Hfit.
     rewrite <- H1.
@@ -609,7 +609,62 @@ auto.
 Qed.
 
 Lemma union_mono2 : mono2 t.
-Admitted.
+intros l1 l2 Hle.
+
+destruct (decode t l1) eqn:Hdec1; cycle 1.
+{ simpl. auto. }
+
+destruct (union_dec Hdec1) as (Hlen1 & data1 & -> & Hdata1 & Hfor1 & Henc1).
+
+unfold decode,decode_union.
+assert (length l2 =? size = true) as ->. {
+  destruct (Nat.eqb_spec (length l2) size); auto.
+  exfalso. apply n.
+  rewrite <- Hlen1.
+  symmetry.
+  apply (le_len Hle).
+}
+
+simpl opt_bind.
+unfold le,option_DefinedRelation,le,Value_DefinedRelation.
+rewrite Hdata1.
+apply (le_nth []). { do 2 rewrite map_length. auto. }
+
+intros i Hi.
+rewrite map_length in Hi.
+
+replace (nth i (map (decode_union_chunk l1) chunks) []) with (nth i (map (decode_union_chunk l1) chunks) (decode_union_chunk l1 (0,0))); cycle 1. { f_equal. }
+replace (nth i (map (decode_union_chunk l2) chunks) []) with (nth i (map (decode_union_chunk l2) chunks) (decode_union_chunk l2 (0,0))); cycle 1. { f_equal. }
+do 2 rewrite map_nth.
+unfold decode_union_chunk.
+destruct (nth i chunks (0,0)) as [off len] eqn:Hc.
+
+assert (size >= off + len). {
+  have A (chunks_fit_size_nth i).
+  rewrite Hc in A.
+  auto.
+}
+
+apply (le_nth Uninit). {
+  rewrite subslice_length; auto; try lia.
+  rewrite subslice_length; auto.
+  rewrite <- (le_len Hle).
+  lia.
+}
+
+intros k Hk.
+assert (k < len). {
+  rewrite subslice_length in Hk; auto.
+  lia.
+}
+
+rewrite subslice_nth; auto; try lia.
+rewrite subslice_nth; auto; cycle 1.
+{ rewrite <- (le_len Hle). lia. }
+
+apply le_nth_rev; auto.
+apply le_abstract_byte_refl.
+Qed.
 
 Lemma union_encode_len : encode_len t.
 Proof.
