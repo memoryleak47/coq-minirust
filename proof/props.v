@@ -1,5 +1,5 @@
 From Minirust.def Require Import ty encoding thm wf.
-From Minirust.proof Require Import defs int bool ptr array union.
+From Minirust.proof Require Import defs int bool ptr array union tuple.
 Require Import List.
 Import ListNotations.
 
@@ -7,16 +7,13 @@ Section props.
 
 Context {params: Params}.
 
-Lemma cheat {P: Prop} : P.
-Admitted.
-
 Lemma gen_props (ty: Ty) : wf ty -> Props ty.
 Proof.
 induction ty; intros Hwf.
 - apply (bool_props Hwf).
 - apply (int_props Hwf).
 - apply (ptr_props Hwf).
-- apply cheat.
+- apply (tuple_props Hwf). (* TODO add correct recursion *)
 - apply (array_props IHty Hwf).
 - apply (union_props Hwf).
 Qed.

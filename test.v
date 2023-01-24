@@ -75,7 +75,6 @@ encode tu (VUnion [[Uninit; Init x01 None]; [Init x02 None]]) = Some [Uninit; In
 decode tu [Init x01 None; Init x01 None; Init x01 None; Init x01 None] = Some (VUnion [[Init x01 None; Init x01 None]; [Init x01 None]]).
 Proof. exec. Qed.
 
-Check TTuple.
 Notation tt := (TTuple [(1, TBool); (3, TBool)] 4).
 Lemma test_tuple :
 encode tt (VTuple [VBool true; VBool false]) = Some [Uninit; Init x01 None; Uninit; Init x00 None] /\

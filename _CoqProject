@@ -29,4 +29,5 @@ proof/int.v
 proof/ptr.v
 proof/array.v
 proof/union.v
+proof/tuple.v
 proof/props.v
