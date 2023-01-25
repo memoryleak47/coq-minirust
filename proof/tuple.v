@@ -1,7 +1,7 @@
 From Minirust.def Require Import ty encoding thm wf le utils.
 From Minirust.proof Require Import defs.
 From Minirust.proof.lemma Require Import utils subslice le.
-Require Import List Nat PeanoNat Bool Lia.
+Require Import List Nat PeanoNat Bool Lia ssreflect.
 Import ListNotations.
 
 Section tuple.
@@ -42,11 +42,44 @@ apply IHf.
 { inversion H. auto. }
 Qed.
 
-(* TODO extend *)
 Lemma tuple_dec [l v] (H: decode t l = Some v) :
   length l = size /\
-  exists vals, v = VTuple vals /\
+  exists vals,
+  transpose (map (decode_tuple_field decode l) fields) = Some vals /\
+  v = VTuple vals /\
   exists l', encode t v = Some l'.
+Proof.
+unfold decode in H. fold decode in H. unfold decode_tuple in H.
+set tr := transpose _ in H.
+destruct tr as [vals|] eqn:Htr; cycle 1. { discriminate H. }
+
+simpl in H.
+destruct (Nat.eqb_spec (length l) size); cycle 1. { discriminate H. }
+
+split. { auto. }
+exists vals.
+simpl in H. inversion H. clear H v H1.
+
+set H1 := transpose _ = Some vals.
+assert (H1). { auto. }
+unfold H1 in *. clear H1.
+
+split; auto.
+split; auto.
+
+unfold encode. fold encode. unfold encode_tuple.
+
+unfold assuming.
+simpl.
+
+assert (length vals = length fields). {
+  rewrite <- (transpose_len H).
+  apply map_length.
+}
+
+destruct (Nat.eqb_spec (length vals) (length fields)); cycle 1. { lia. }
+
+simpl.
 Admitted.
 
 Lemma tuple_rt1 : rt1 t.
