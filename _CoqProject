@@ -12,6 +12,7 @@ test.v
 
 proof/defs.v
 
+proof/ty_ind.v
 proof/lemma/vector.v
 proof/lemma/utils.v
 proof/lemma/le.v
