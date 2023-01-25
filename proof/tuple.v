@@ -80,9 +80,14 @@ assert (length vals = length fields). {
 destruct (Nat.eqb_spec (length vals) (length fields)); cycle 1. { lia. }
 
 simpl.
+
 Admitted.
 
 Lemma tuple_rt1 : rt1 t.
+intros v [l Hdec].
+destruct (tuple_dec Hdec) as (Hlen & vals & Htr & -> & l' & Henc).
+exists l'.
+split. { auto. }
 Admitted.
 
 Lemma tuple_rt2 : rt2 t.
