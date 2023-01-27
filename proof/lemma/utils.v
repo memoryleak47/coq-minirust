@@ -1,5 +1,5 @@
-Require Import List.
-Import ListNotations Nat Bool.
+Require Import List Lia Nat Bool.
+Import ListNotations.
 From Minirust.def Require Import utils ty le.
 From Minirust.proof.lemma Require Import le.
 
@@ -160,6 +160,24 @@ have A (IH l2 H).
 apply (transpose_le_step A).
 inversion Hle.
 auto.
+Qed.
+
+Lemma map_nth_switchd {A B : Type} {f : A -> B}
+                      (da: A) {l : list A} {n : nat} {db : B}
+  (H: n < length l) :
+  nth n (map f l) db = f (nth n l da).
+Proof.
+generalize dependent n.
+induction l as [|x l IH].
+{ intros. destruct n; simpl in H; lia. }
+
+intros.
+destruct n as [|n]. { auto. }
+
+simpl.
+apply IH.
+simpl in H.
+lia.
 Qed.
 
 End utils.

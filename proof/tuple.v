@@ -155,11 +155,37 @@ refine (dec_to_enc _ e _ H).
 apply repeat_length.
 Qed.
 
+Lemma tuple_encode_len : encode_len t.
+Admitted.
+
 Lemma tuple_rt1 : rt1 t.
 intros v [l Hdec].
 destruct (tuple_dec Hdec) as (Hlen & vals & Htr & -> & l' & Henc).
 exists l'.
 split. { auto. }
+unfold decode. fold decode. unfold decode_tuple.
+assert (map (decode_tuple_field decode l) fields = map (decode_tuple_field decode l') fields); cycle 1. {
+  rewrite <- H.
+  rewrite Htr.
+  simpl.
+  rewrite (tuple_encode_len _ _ Henc).
+  simpl.
+  rewrite Nat.eqb_refl.
+  auto.
+}
+
+refine (nth_ext _ _ None None _ _).
+{ do 2 rewrite map_length. auto. }
+
+intros j Hj.
+rewrite map_length in Hj.
+rewrite (map_nth_switchd (0,TBool)); auto.
+rewrite (map_nth_switchd (0,TBool)); auto.
+unfold decode_tuple_field.
+destruct (nth j fields (0, TBool)) as [offset sub_ty] eqn:Hfieldj.
+assert (subslice_with_length l offset (ty_size sub_ty) =
+        subslice_with_length l' offset (ty_size sub_ty)); cycle 1.
+{ rewrite Hfieldj. rewrite H. auto. }
 Admitted.
 
 Lemma tuple_rt2 : rt2 t.
@@ -171,8 +197,6 @@ Admitted.
 Lemma tuple_mono2 : mono2 t.
 Admitted.
 
-Lemma tuple_encode_len : encode_len t.
-Admitted.
 
 Lemma tuple_props : Props t.
 Proof.
