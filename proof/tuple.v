@@ -159,12 +159,49 @@ Lemma tuple_encode_len : encode_len t.
 Proof.
 intros v l Henc.
 unfold encode in Henc. fold encode in Henc. unfold encode_tuple in Henc.
-destruct v; try discriminate Henc.
+destruct v as [| | |vals|]; try discriminate Henc.
 simpl in Henc.
 unfold assuming in Henc.
-destruct (length l0 =? length fields); try discriminate Henc.
+destruct (length vals =? length fields); try discriminate Henc.
 simpl in Henc.
-Admitted.
+
+(* note that we cannot prove `length vals = length fields` *)
+(* it's not a problem though, encode_tuple_fields terminates when one of the lists is empty *)
+
+assert (forall a, length a = size -> forall ll, encode_tuple_fields a fields encode vals = Some ll -> length ll = size); cycle 1. {
+  simpl.
+  refine (H (repeat Uninit size) _ l Henc).
+  apply repeat_length.
+}
+
+pose proof fields_fit_size_l as Hfit.
+pose proof props_fields as Hprops.
+clear props_IH Hwf Henc.
+generalize dependent vals.
+
+induction fields as [|[off sub_ty] fs IH].
+{ intros. simpl in H0. inversion H0. rewrite <- H2. auto. }
+
+intros.
+destruct vals as [|v vals].
+{ simpl in H0. inversion H0. rewrite <- H2. auto. }
+
+simpl in H0.
+destruct (encode sub_ty v) eqn:E; cycle 1.
+{ simpl in H0. discriminate H0. }
+
+simpl in H0.
+refine (IH _ _ vals (write_subslice_at_index a off l0) _ _ _); auto.
+{ inversion Hfit. auto. }
+{ inversion Hprops. auto. }
+apply write_subslice_length; auto.
+inversion Hfit.
+simpl in H3.
+rewrite H.
+inversion Hprops.
+rewrite (PR_ENCODE_LEN _ H7 _ _ E).
+auto.
+Qed.
 
 Lemma tuple_rt1 : rt1 t.
 intros v [l Hdec].
