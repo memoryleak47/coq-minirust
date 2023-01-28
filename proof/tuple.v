@@ -156,6 +156,14 @@ apply repeat_length.
 Qed.
 
 Lemma tuple_encode_len : encode_len t.
+Proof.
+intros v l Henc.
+unfold encode in Henc. fold encode in Henc. unfold encode_tuple in Henc.
+destruct v; try discriminate Henc.
+simpl in Henc.
+unfold assuming in Henc.
+destruct (length l0 =? length fields); try discriminate Henc.
+simpl in Henc.
 Admitted.
 
 Lemma tuple_rt1 : rt1 t.
