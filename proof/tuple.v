@@ -164,9 +164,15 @@ destruct (tuple_dec Hdec) as (Hlen & vals & Htr & -> & l' & Henc).
 exists l'.
 split. { auto. }
 unfold decode. fold decode. unfold decode_tuple.
-assert (map (decode_tuple_field decode l) fields = map (decode_tuple_field decode l') fields); cycle 1. {
-  rewrite <- H.
-  rewrite Htr.
+
+assert (length vals = length fields) as Hvals_len. {
+  rewrite <- (transpose_len Htr).
+  rewrite map_length.
+  auto.
+}
+
+assert (transpose (map (decode_tuple_field decode l') fields) = Some vals); cycle 1. {
+  rewrite H.
   simpl.
   rewrite (tuple_encode_len _ _ Henc).
   simpl.
@@ -174,18 +180,49 @@ assert (map (decode_tuple_field decode l) fields = map (decode_tuple_field decod
   auto.
 }
 
-refine (nth_ext _ _ None None _ _).
-{ do 2 rewrite map_length. auto. }
+assert (encode_tuple_fields (repeat Uninit size) fields encode vals = Some l'). {
+  unfold encode in Henc. fold encode in Henc. unfold encode_tuple in Henc.
+  simpl in Henc.
+  unfold assuming in Henc.
+  rewrite Hvals_len in Henc.
+  rewrite Nat.eqb_refl in Henc.
+  simpl in Henc.
+  auto.
+}
 
-intros j Hj.
+apply transpose_nth_ext.
+{ rewrite map_length. auto. }
+
+intros def j Hj.
 rewrite map_length in Hj.
 rewrite (map_nth_switchd (0,TBool)); auto.
-rewrite (map_nth_switchd (0,TBool)); auto.
+destruct (nth j fields (0, TBool)) as [off sub_ty] eqn:Hfieldsj.
 unfold decode_tuple_field.
-destruct (nth j fields (0, TBool)) as [offset sub_ty] eqn:Hfieldj.
-assert (subslice_with_length l offset (ty_size sub_ty) =
-        subslice_with_length l' offset (ty_size sub_ty)); cycle 1.
-{ rewrite Hfieldj. rewrite H. auto. }
+rewrite Hfieldsj.
+
+assert (rt1 sub_ty) as Hsub_rt1. { admit. }
+
+assert (Some (subslice_with_length l' off (ty_size sub_ty)) = encode sub_ty (nth j vals def)); cycle 1. {
+  assert (decode_tuple_field decode l (nth j fields (0,TBool)) = Some (nth j vals def)). {
+    pose proof (transpose_nth Htr).
+    rewrite <- H1; cycle 1. { rewrite map_length. auto. }
+    rewrite (map_nth_switchd (0,TBool)); auto.
+  }
+  assert (is_valid_for sub_ty (nth j vals def)). {
+    unfold decode_tuple_field in H1.
+    rewrite Hfieldsj in H1.
+    eexists _.
+    apply H1.
+  }
+  destruct (Hsub_rt1 _ H2) as (lsub & Hsubenc & Hsubdec).
+  assert (lsub = subslice_with_length l' off (ty_size sub_ty)) as <-; cycle 1. { auto. }
+  rewrite <- H0 in Hsubenc.
+  inversion Hsubenc.
+  auto.
+}
+
+(* TODO use encode_nth_hit lemma to prove this *)
+
 Admitted.
 
 Lemma tuple_rt2 : rt2 t.

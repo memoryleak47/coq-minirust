@@ -180,4 +180,14 @@ simpl in H.
 lia.
 Qed.
 
+Lemma transpose_nth_ext {T} {xs: list T} {l: list (option T)} (Hlen: length l = length xs) (H: forall def j, j < length l -> nth j l None = Some (nth j xs def))
+ : transpose l = Some xs.
+Proof.
+Admitted.
+
+Lemma transpose_nth {T xs} {l: list (option T)} (H: transpose l = Some xs) :
+  forall def j, j < length l -> nth j l None = Some (nth j xs def).
+Admitted.
+
+
 End utils.
