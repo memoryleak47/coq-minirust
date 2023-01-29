@@ -262,14 +262,61 @@ auto.
 Qed.
 
 Lemma encode_nth_rest {fs i vals a r l}
+  (Hfit: fields_fit_size fs size)
+  (Hprops: Forall Props (map snd fs))
   (H : existsb (contains i) (map interval_of_field fs) = false)
+  (Hi: i < size)
   (Ha_len : length a = size)
   (Hlens : length vals = length fs)
   (Hr: nth i a Uninit = r)
   (Henc: encode_tuple_fields a fs encode vals = Some l)
 : nth i l Uninit = r.
+Proof.
 clear props_IH Hwf.
-Admitted.
+
+generalize dependent vals.
+generalize dependent a.
+
+induction fs as [|[off sub_ty] fs IH].
+{ intros. simpl in Henc. inversion Henc. rewrite <- H1. auto. }
+
+intros.
+destruct vals as [|v vals].
+{ simpl in *. discriminate. }
+
+simpl in Henc.
+destruct (encode sub_ty v) eqn:E'; try discriminate.
+simpl in Henc.
+
+simpl in H.
+destruct (contains i (off, ty_size sub_ty)) eqn:E; try discriminate.
+simpl in H.
+
+assert (length l0 = ty_size sub_ty) as Hl0. {
+  inversion Hprops.
+  apply (PR_ENCODE_LEN _ H2 _ _ E').
+}
+
+refine (IH _ _ _ (write_subslice_at_index a off l0) _ _ vals _ _); auto.
+{ inversion Hfit. auto. }
+{ inversion Hprops. auto. }
+{ apply write_subslice_length; auto.
+  rewrite Hl0.
+  inversion Hfit.
+  simpl in H2.
+  rewrite Ha_len.
+  auto.
+}
+{ rewrite <- Hl0 in E.
+  rewrite <- Hr.
+  refine (subslice_write_nth_miss _ E).
+  rewrite Hl0.
+  rewrite Ha_len.
+  inversion Hfit.
+  simpl in H2.
+  auto.
+}
+Qed.
 
 Lemma encode_nth_hit {i l j vals} def
   (Hj : j < length fields)
@@ -362,8 +409,13 @@ assert (i < size) as Hi. {
   auto.
 }
 
-refine (encode_nth_rest _ _ _ H H0); auto; cycle 1.
+assert (length vals = length fs) as Hvfs_len.
+{ simpl in Hvals_len. lia. }
+
+refine (encode_nth_rest _ _ _ Hi _ Hvfs_len H _); auto; cycle 3.
 { apply write_subslice_length; auto. }
+{ inversion Hfit. auto. }
+{ inversion Hprops. auto. }
 
 clear - Hdisj Hcont Hi.
 simpl in Hcont.
@@ -374,7 +426,6 @@ assert (forall j, j < length fs -> contains i (interval_of_field (nth j fs (0,TB
   simpl. auto.
 }
 clear - H.
-
 
 induction fs as [|[off sub_ty] fs IH].
 { simpl. auto. }
