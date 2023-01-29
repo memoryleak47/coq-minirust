@@ -18,6 +18,11 @@ Lemma fields_fit_size_l : fields_fit_size fields size.
 apply Hwf.
 Qed.
 
+Lemma fields_disjoint_l : forall i j1 j2, i < size -> j1 < length fields -> j2 < length fields -> j1 <> j2 ->
+contains i (interval_of_field (nth j1 fields (0,TBool))) = true ->
+contains i (interval_of_field (nth j2 fields (0, TBool))) = false.
+Admitted.
+
 Lemma props_fields : Forall Props (map snd fields).
 Proof.
 assert (Forall wf (map snd fields)). {
@@ -202,6 +207,147 @@ inversion Hprops.
 rewrite (PR_ENCODE_LEN _ H7 _ _ E).
 auto.
 Qed.
+
+Lemma encode_nth_rest {fs i vals a r l}
+  (H : existsb (contains i) (map interval_of_field fs) = false)
+  (Ha_len : length a = size)
+  (Hlens : length vals = length fs)
+  (Hr: nth i a Uninit = r)
+  (Henc: encode_tuple_fields a fs encode vals = Some l)
+: nth i l Uninit = r.
+clear props_IH Hwf.
+Admitted.
+
+Lemma encode_nth_hit {i l j vals def}
+  (Hj : j < length fields)
+  (Hvals_len : length vals = length fields)
+  (H : encode_tuple_fields (repeat Uninit size) fields encode vals = Some l)
+  (Hcont : contains i (interval_of_field (nth j fields (0,TBool))) = true)
+: let (off, sub_ty) := nth j fields (0, TBool) in
+exists subl, encode sub_ty (nth j vals def) = Some subl /\  nth i l Uninit = nth (i-off) subl Uninit.
+Proof.
+pose proof (repeat_length Uninit size) as Ha.
+pose proof props_fields as Hprops.
+pose proof fields_fit_size_l as Hfit.
+pose proof fields_disjoint_l as Hdisj.
+
+clear props_IH Hwf.
+
+generalize dependent (repeat Uninit size).
+generalize dependent vals.
+generalize dependent j.
+
+induction fields as [|f fs IH].
+{ intros. simpl in Hj. lia. }
+
+intros j Hj Hcont vals Hvals_len a H0 Ha.
+
+destruct f as [off sub_ty] eqn:F.
+
+destruct j as [|j]; cycle 1. {
+  destruct vals as [|v vals]. { simpl in Hvals_len. lia. }
+  simpl.
+  simpl in H0.
+  destruct (encode sub_ty v) eqn:E; cycle 1.
+  { simpl in H0. discriminate H0. }
+  refine (IH _ _ _ j _ _ vals _ (write_subslice_at_index a off l0) _ _); auto.
+  { inversion Hprops. auto. }
+  { inversion Hfit. auto. }
+  { intros i' j1 j2 Hi' Hj1 Hj2 Hdiff Ht.
+    refine (Hdisj i' (S j1) (S j2) Hi' _ _ _ _); simpl; try lia.
+    auto.
+  }
+  { simpl in Hj. lia. }
+  { apply write_subslice_length; auto.
+    rewrite Ha.
+    inversion Hprops.
+    rewrite (PR_ENCODE_LEN _ H2 _ _ E).
+    inversion Hfit.
+    simpl in H6.
+    auto.
+  }
+}
+
+destruct vals as [|v vals].
+{ simpl in *. discriminate Hvals_len. }
+
+destruct (encode sub_ty v) eqn:E; cycle 1.
+{ simpl in *. rewrite E in H0. discriminate. }
+
+exists l0.
+split. { auto. }
+simpl in H0.
+
+assert (length l0 = ty_size sub_ty) as Hl0. {
+  inversion Hprops.
+  apply (PR_ENCODE_LEN _ H2 _ _ E).
+}
+
+assert (off + length l0 <= length a) as Hfitl0. {
+  rewrite Ha.
+  rewrite Hl0.
+  inversion Hfit.
+  apply H2.
+}
+
+assert (nth i (write_subslice_at_index a off l0) Uninit = nth (i - off) l0 Uninit). {
+  apply subslice_write_nth_hit; auto.
+  { rewrite Hl0. auto. }
+}
+
+rewrite E in H0.
+simpl in H0.
+
+assert (i < size) as Hi. {
+  unfold contains in Hcont.
+  simpl in Hcont.
+  destruct (andb_prop _ _ Hcont) as [_ Hil].
+  destruct (Nat.ltb_spec i (off + ty_size sub_ty)); try discriminate Hil.
+  assert (off + ty_size sub_ty <= size); cycle 1. { lia. }
+  rewrite Ha in Hfitl0.
+  rewrite <- Hl0.
+  auto.
+}
+
+refine (encode_nth_rest _ _ _ H H0); auto; cycle 1.
+{ apply write_subslice_length; auto. }
+
+clear - Hdisj Hcont Hi.
+simpl in Hcont.
+
+assert (forall j, j < length fs -> contains i (interval_of_field (nth j fs (0,TBool))) = false). {
+  intros j Hj.
+  refine (Hdisj i 0 (S j) Hi _ _ _ _); try (simpl; lia).
+  simpl. auto.
+}
+clear - H.
+
+
+induction fs as [|[off sub_ty] fs IH].
+{ simpl. auto. }
+
+simpl.
+assert (contains i (off, ty_size sub_ty) = false) as ->. {
+  refine (H 0 _).
+  simpl. lia.
+}
+simpl.
+apply IH.
+intros j Hj.
+refine (H (S j) _).
+simpl. lia.
+Qed.
+
+(* TODO
+Lemma subslice_thingy {l off sub_ty j vals def}
+  (Hj : j < length fields)
+  (Hvals_len : length vals = length fields)
+  (Hfieldsj : nth j fields (0, TBool) = (off, sub_ty))
+  (H : encode_tuple_fields (repeat Uninit size) fields encode vals = Some l)
+  :
+  encode sub_ty (nth j vals def) = Some (subslice_with_length l off (ty_size sub_ty)).
+Admitted.
+*)
 
 Lemma tuple_rt1 : rt1 t.
 intros v [l Hdec].
