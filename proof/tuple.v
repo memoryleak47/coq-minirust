@@ -55,7 +55,7 @@ Lemma dec_to_enc {vals l} a
 (Hl: length l = size)
 (Ha: length a = size)
 (H : transpose (map (decode_tuple_field decode l) fields) = Some vals)
-: exists l', encode_tuple_fields a fields encode vals = Some l'.
+: exists l', encode_tuple_fields a fields encode vals = Some l' /\ length l' = size.
 Proof.
 pose proof props_fields as Hprops.
 pose proof fields_fit_size_l as Hfit.
@@ -122,7 +122,7 @@ Lemma tuple_dec [l v] (H: decode t l = Some v) :
   exists vals,
   transpose (map (decode_tuple_field decode l) fields) = Some vals /\
   v = VTuple vals /\
-  exists l', encode t v = Some l'.
+  exists l', encode t v = Some l' /\ length l' = size.
 Proof.
 unfold decode in H. fold decode in H. unfold decode_tuple in H.
 set tr := transpose _ in H.
@@ -208,6 +208,59 @@ rewrite (PR_ENCODE_LEN _ H7 _ _ E).
 auto.
 Qed.
 
+Lemma encode_nth_some {l off sub_ty j vals} def
+  (Hj : j < length fields)
+  (Hvals_len : length vals = length fields)
+  (Hfieldsj : nth j fields (0, TBool) = (off, sub_ty))
+  (H : encode_tuple_fields (repeat Uninit size) fields encode vals = Some l)
+: exists subl, encode sub_ty (nth j vals def) = Some subl.
+Proof.
+pose proof (repeat_length Uninit size) as Ha.
+pose proof props_fields as Hprops.
+pose proof fields_fit_size_l as Hfit.
+
+clear props_IH Hwf.
+
+generalize dependent (repeat Uninit size).
+generalize dependent vals.
+generalize dependent j.
+induction fields as [|[off' sub_ty'] fs IH].
+{ simpl in *. lia. }
+
+intros.
+destruct vals as [|v vals].
+{ simpl in *. lia. }
+
+destruct j as [|j]. {
+  simpl in *.
+  destruct (encode sub_ty' v) eqn:E; try discriminate.
+  simpl in H.
+  exists l1.
+  inversion Hfieldsj.
+  rewrite <- H2.
+  auto.
+}
+
+simpl.
+simpl in H.
+destruct (encode sub_ty' v) eqn:E; try discriminate.
+simpl in H.
+refine (IH _ _ j _ _ vals _ _ H _); auto.
+{ inversion Hprops. auto. }
+{ inversion Hfit. auto. }
+{ simpl in *. lia. }
+
+apply write_subslice_length. { auto. }
+rewrite Ha.
+assert (length l1 = ty_size sub_ty') as ->. {
+  inversion Hprops.
+  apply (PR_ENCODE_LEN _ H2 _ _ E).
+}
+inversion Hfit.
+simpl in H2.
+auto.
+Qed.
+
 Lemma encode_nth_rest {fs i vals a r l}
   (H : existsb (contains i) (map interval_of_field fs) = false)
   (Ha_len : length a = size)
@@ -218,7 +271,7 @@ Lemma encode_nth_rest {fs i vals a r l}
 clear props_IH Hwf.
 Admitted.
 
-Lemma encode_nth_hit {i l j vals def}
+Lemma encode_nth_hit {i l j vals} def
   (Hj : j < length fields)
   (Hvals_len : length vals = length fields)
   (H : encode_tuple_fields (repeat Uninit size) fields encode vals = Some l)
@@ -338,20 +391,93 @@ refine (H (S j) _).
 simpl. lia.
 Qed.
 
-(* TODO
-Lemma subslice_thingy {l off sub_ty j vals def}
+Lemma subslice_encode {l off sub_ty j vals def}
   (Hj : j < length fields)
   (Hvals_len : length vals = length fields)
   (Hfieldsj : nth j fields (0, TBool) = (off, sub_ty))
+  (Hl: length l = size)
   (H : encode_tuple_fields (repeat Uninit size) fields encode vals = Some l)
-  :
-  encode sub_ty (nth j vals def) = Some (subslice_with_length l off (ty_size sub_ty)).
-Admitted.
-*)
+: Some (subslice_with_length l off (ty_size sub_ty)) = encode sub_ty (nth j vals def).
+Proof.
+destruct (encode_nth_some def Hj Hvals_len Hfieldsj H) as (l' & Henc).
+rewrite Henc.
+f_equal.
+
+assert (length (subslice_with_length l off (ty_size sub_ty)) = ty_size sub_ty). {
+  rewrite subslice_length; auto.
+  rewrite Hl.
+  pose proof fields_fit_size_l as Hfit.
+  pose proof (proj1 (Forall_nth _ _) Hfit) as Hfit_nth.
+  assert (sub_ty = nth j (map snd fields) TBool) as ->. {
+    rewrite (map_nth_switchd (0,TBool) _); auto.
+    rewrite Hfieldsj.
+    auto.
+  }
+  pose proof (Hfit_nth j (0,TBool) Hj).
+  rewrite Hfieldsj in H0.
+  simpl in H0.
+  auto.
+}
+
+assert (length l' = ty_size sub_ty). {
+  pose proof props_fields as Hprops.
+  pose proof (proj1 (Forall_nth _ _) Hprops) as Hprops_nth.
+  assert (sub_ty = nth j (map snd fields) TBool) as ->. {
+    rewrite (map_nth_switchd (0,TBool) _); auto.
+    rewrite Hfieldsj.
+    auto.
+  }
+  assert (j < length (map snd fields)) as HF.
+  { rewrite map_length. auto. }
+
+  pose proof (Hprops_nth j TBool HF).
+  apply (PR_ENCODE_LEN _ H1 _ _ Henc).
+}
+
+refine (nth_ext _ _ Uninit Uninit _ _).
+{ rewrite H1. auto. }
+intros i Hi.
+
+assert (i < ty_size sub_ty).
+{ rewrite <- H0. auto. }
+
+rewrite subslice_nth; auto. {
+  rewrite Hl.
+  pose proof fields_fit_size_l as Hfit.
+  pose proof (proj1 (Forall_nth _ _) Hfit) as Hfit_nth.
+  assert (sub_ty = nth j (map snd fields) TBool) as ->. {
+    rewrite (map_nth_switchd (0,TBool) _); auto.
+    rewrite Hfieldsj.
+    auto.
+  }
+  pose proof (Hfit_nth j (0,TBool) Hj).
+  simpl in H3.
+  rewrite Hfieldsj in H3.
+  simpl in H3.
+  auto.
+}
+
+assert (contains (i+off) (interval_of_field (nth j fields (0, TBool))) = true). {
+  rewrite Hfieldsj.
+  unfold contains.
+  simpl.
+  destruct (Nat.leb_spec off (i + off)); try lia.
+  simpl.
+  destruct (Nat.ltb_spec (i + off) (off + ty_size sub_ty)); lia.
+}
+
+pose proof (encode_nth_hit def Hj Hvals_len H H3).
+rewrite Hfieldsj in H4.
+destruct H4 as (l'' & Henc' & ->).
+assert (l' = l'') as ->.
+{ rewrite Henc' in Henc. inversion Henc. auto. }
+f_equal.
+lia.
+Qed.
 
 Lemma tuple_rt1 : rt1 t.
 intros v [l Hdec].
-destruct (tuple_dec Hdec) as (Hlen & vals & Htr & -> & l' & Henc).
+destruct (tuple_dec Hdec) as (Hlen & vals & Htr & -> & l' & Henc & Hlen').
 exists l'.
 split. { auto. }
 unfold decode. fold decode. unfold decode_tuple.
@@ -391,7 +517,17 @@ destruct (nth j fields (0, TBool)) as [off sub_ty] eqn:Hfieldsj.
 unfold decode_tuple_field.
 rewrite Hfieldsj.
 
-assert (rt1 sub_ty) as Hsub_rt1. { admit. }
+assert (rt1 sub_ty) as Hsub_rt1. {
+  pose proof props_fields as Hprops.
+  pose proof (proj1 (Forall_nth _ _) Hprops) as Hprops_nth.
+  assert (sub_ty = nth j (map snd fields) TBool) as ->. {
+    rewrite (map_nth_switchd (0,TBool) _); auto.
+    rewrite Hfieldsj.
+    auto.
+  }
+  refine (PR_RT1 _ (Hprops_nth j _ _)).
+  rewrite map_length. auto.
+}
 
 assert (Some (subslice_with_length l' off (ty_size sub_ty)) = encode sub_ty (nth j vals def)); cycle 1. {
   assert (decode_tuple_field decode l (nth j fields (0,TBool)) = Some (nth j vals def)). {
@@ -412,9 +548,8 @@ assert (Some (subslice_with_length l' off (ty_size sub_ty)) = encode sub_ty (nth
   auto.
 }
 
-(* TODO use encode_nth_hit lemma to prove this *)
-
-Admitted.
+apply subslice_encode; auto.
+Qed.
 
 Lemma tuple_rt2 : rt2 t.
 Admitted.
