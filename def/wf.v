@@ -1,4 +1,4 @@
-Require Import ZArith List Permutation.
+Require Import ZArith List Bool.
 Import ListNotations.
 From Minirust.def Require Import ty int_encoding.
 
@@ -53,15 +53,19 @@ Definition interval_pair_contained_in (i1 i2: Interval) :=
 Definition intervals_sorted_disjoint (l: list Interval) :=
   ForallOrdPairs interval_pair_sorted_disjoint l.
 
-Definition intervals_disjoint (l: list Interval) := exists l' (_: Permutation l l'), intervals_sorted_disjoint l'.
-
 Definition interval_of_field (f: Size * Ty) :=
   match f with
   | (o,t) => (o, ty_size t)
   end.
 
-Definition fields_disjoint (fields: Fields) : Prop :=
-  intervals_disjoint (map interval_of_field fields).
+Definition contains i (interval: nat * nat) := (
+  (fst interval <=? i) &&
+  (i <? fst interval + snd interval)
+).
+
+Definition fields_disjoint (fields: Fields) : Prop := forall i j1 j2, j1 < length fields -> j2 < length fields -> j1 <> j2 ->
+contains i (interval_of_field (nth j1 fields (0,TBool))) = true ->
+contains i (interval_of_field (nth j2 fields (0, TBool))) = false.
 
 (* checks that every field is completely contained a chunk *)
 (* note that a chunk is already an `Interval` *)

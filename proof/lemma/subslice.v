@@ -1,6 +1,6 @@
 Require Import List Lia Nat PeanoNat Bool.
 Import ListNotations.
-From Minirust.def Require Import encoding utils.
+From Minirust.def Require Import encoding utils wf.
 From Minirust.proof.lemma Require Import utils.
 
 Lemma skipn_add {T n m} (l: list T) : skipn n (skipn m l) = skipn (n+m) l.

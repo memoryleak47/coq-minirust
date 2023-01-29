@@ -18,10 +18,17 @@ Lemma fields_fit_size_l : fields_fit_size fields size.
 apply Hwf.
 Qed.
 
+(* the `i < size` argument is not really required here. It's only for historical reasons *)
 Lemma fields_disjoint_l : forall i j1 j2, i < size -> j1 < length fields -> j2 < length fields -> j1 <> j2 ->
 contains i (interval_of_field (nth j1 fields (0,TBool))) = true ->
 contains i (interval_of_field (nth j2 fields (0, TBool))) = false.
-Admitted.
+Proof.
+intros.
+inversion Hwf.
+inversion H5.
+inversion H7.
+apply (H9 i j1 j2); auto.
+Qed.
 
 Lemma props_fields : Forall Props (map snd fields).
 Proof.
