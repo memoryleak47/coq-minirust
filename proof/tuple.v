@@ -325,6 +325,18 @@ refine (IH _ _ _ (write_subslice_at_index a off l0) _ _ vals _ _); auto.
 }
 Qed.
 
+Lemma encode_nth_miss {i vals l}
+  (H : existsb (contains i) (map interval_of_field fields) = false)
+  (Hi: i < size)
+  (Hlens : length vals = length fields)
+  (Henc: encode_tuple_fields (repeat Uninit size) fields encode vals = Some l)
+: nth i l Uninit = Uninit.
+Proof.
+refine (encode_nth_rest fields_fit_size_l props_fields H Hi _ Hlens _ Henc).
+{ apply repeat_length. }
+{ apply nth_repeat. }
+Qed.
+
 Lemma encode_nth_hit {i l j vals} def
   (Hj : j < length fields)
   (Hvals_len : length vals = length fields)
@@ -610,6 +622,33 @@ apply subslice_encode; auto.
 Qed.
 
 Lemma tuple_rt2 : rt2 t.
+intros l v Hdec.
+destruct (tuple_dec Hdec) as (Hlen & vals & Htr & -> & l' & Henc & Hlen').
+exists l'.
+split. { auto. }
+apply (le_nth Uninit). { lia. } 
+intros i Hi.
+
+assert (length vals = length fields) as Hvals_len. {
+  pose proof transpose_len Htr.
+  rewrite <- H.
+  rewrite map_length.
+  auto.
+}
+
+destruct (existsb (contains i) (map interval_of_field fields)) eqn:Hex; cycle 1. {
+  unfold encode in Henc. fold encode in Henc. unfold encode_tuple in Henc.
+  simpl in Henc.
+  unfold assuming in Henc.
+  rewrite Hvals_len in Henc.
+  rewrite (Nat.eqb_refl (length fields)) in Henc.
+  simpl in Henc.
+  rewrite (encode_nth_miss Hex _ Hvals_len Henc).
+  { rewrite <- Hlen'. auto. }
+  simpl.
+  auto.
+}
+
 Admitted.
 
 Lemma tuple_mono1 : mono1 t.
