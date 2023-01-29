@@ -558,7 +558,7 @@ assert (encode_tuple_fields (repeat Uninit size) fields encode vals = Some l'). 
   auto.
 }
 
-apply transpose_nth_ext.
+apply (transpose_nth_ext (VBool true)).
 { rewrite map_length. auto. }
 
 intros def j Hj.

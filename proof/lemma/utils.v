@@ -180,14 +180,70 @@ simpl in H.
 lia.
 Qed.
 
-Lemma transpose_nth_ext {T} {xs: list T} {l: list (option T)} (Hlen: length l = length xs) (H: forall def j, j < length l -> nth j l None = Some (nth j xs def))
+Lemma transpose_nth_ext {T} (def: T) {xs: list T} {l: list (option T)} (Hlen: length l = length xs) (H: forall def j, j < length l -> nth j l None = Some (nth j xs def))
  : transpose l = Some xs.
 Proof.
-Admitted.
+generalize dependent xs.
+induction l as [|a l IH].
+{ intros. simpl. destruct xs; simpl; try discriminate. auto. }
+
+intros.
+destruct xs as [|x xs]. { discriminate. }
+
+assert (0 < length (a :: l)) as Hobv. { simpl. lia. }
+pose proof (H def 0 Hobv).
+
+destruct a as [a|]; cycle 1. {
+  simpl in H0. discriminate.
+}
+
+simpl.
+
+simpl in H0. inversion H0.
+rewrite H2 in *. clear a H2.
+
+rewrite (IH xs).
+{ simpl. auto. }
+{ simpl in Hlen. lia. }
+intros def' j Hj.
+
+pose proof (H def' (S j)).
+simpl in H1.
+apply H1.
+lia.
+Qed.
 
 Lemma transpose_nth {T xs} {l: list (option T)} (H: transpose l = Some xs) :
   forall def j, j < length l -> nth j l None = Some (nth j xs def).
-Admitted.
+Proof.
+generalize dependent xs.
+induction l as [|x_ l IH].
+{ intros. simpl in H0. lia. }
 
+intros.
+destruct x_ as [x|]; cycle 1.
+{ simpl in H. discriminate. }
+
+destruct xs as [|x__ xs].
+{ pose proof transpose_len H.
+  simpl in *. lia.
+}
+
+assert (x__ = x) as ->. {
+  simpl in H.
+  destruct (transpose l); try discriminate.
+  simpl in H.
+  inversion H.
+  auto.
+}
+
+destruct j as [|j].
+{ simpl. auto. }
+
+simpl.
+apply IH.
+{ simpl in H. destruct (transpose l); try discriminate. simpl in H. inversion H. auto. }
+{ simpl in *. lia. }
+Qed.
 
 End utils.
