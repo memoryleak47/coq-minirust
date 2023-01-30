@@ -867,8 +867,100 @@ auto.
 Qed.
 
 Lemma tuple_mono2 : mono2 t.
-Admitted.
+intros l1 l2 Hle.
+destruct (decode t l1) eqn:Hdec1; try (simpl; done).
+destruct (tuple_dec Hdec1) as (Hlen1 & vals1 & Htr1 & -> & l1' & Henc1 & Hlen1').
+unfold decode. fold decode. unfold decode_tuple.
 
+assert (exists vals2, transpose (map (decode_tuple_field decode l2) fields) = Some vals2 /\ le vals1 vals2) as (vals2 & Htr & Hle'); cycle 1. {
+  rewrite Htr.
+  assert (length l2 =? size = true) as ->. {
+    pose proof le_len Hle.
+    rewrite <- H.
+    rewrite Hlen1.
+    apply Nat.eqb_refl.
+  }
+  simpl.
+  auto.
+}
+
+pose proof props_fields as Hprops.
+pose proof fields_fit_size_l as Hfit.
+
+clear Hwf props_IH Henc1 l1' Hlen1' Hdec1.
+
+assert (length vals1 = length fields) as Hval_len1. {
+  pose proof (transpose_len Htr1).
+  rewrite map_length in H.
+  auto.
+}
+
+generalize dependent vals1.
+
+induction fields as [|[off sub_ty] fs IH].
+{ intros. exists []. split. { auto. } destruct vals1; try discriminate. simpl. auto. }
+
+intros.
+simpl map.
+simpl map in Htr1.
+
+destruct vals1 as [|v1 vals1]. { discriminate. }
+simpl in Htr1.
+
+destruct (decode sub_ty (subslice_with_length l1 off (ty_size sub_ty))) as [v1_|] eqn:E1; try discriminate.
+destruct (transpose (map (decode_tuple_field decode l1) fs)) as [vals1_|] eqn:E2; try discriminate.
+
+simpl in Htr1.
+assert (v1_ = v1) as ->. { inversion Htr1. auto. }
+assert (vals1_ = vals1) as ->. { inversion Htr1. auto. }
+
+assert (exists v2, decode sub_ty (subslice_with_length l2 off (ty_size sub_ty)) = Some v2 /\ le v1 v2) as (v2 & Hdec_v2 & Hlev); cycle 1. {
+  rewrite Hdec_v2.
+  assert (Some vals1 = Some vals1). { auto. }
+  assert (length vals1 = length fs). { simpl in Hval_len1. lia. }
+  assert (Forall Props (map snd fs)) as Hp. { inversion Hprops. auto. }
+  assert (fields_fit_size fs size) as Hf. { inversion Hfit. auto. }
+  destruct (IH Hp Hf vals1 H H0) as (vals2 & Htr2 & Hle_vals2).
+  exists (v2 :: vals2).
+  split. { simpl. rewrite Htr2. simpl. auto. }
+  simpl. auto.
+}
+
+assert (length l2 = size) as Hlen2. {
+  rewrite <- (le_len Hle).
+  auto.
+}
+
+assert (size >= off + ty_size sub_ty) as Hsubfit.
+{ inversion Hfit. auto. }
+
+assert (le (subslice_with_length l1 off (ty_size sub_ty)) (subslice_with_length l2 off (ty_size sub_ty))). {
+  apply (le_nth Uninit). {
+    rewrite subslice_length. { rewrite Hlen1. auto. }
+    rewrite subslice_length. { rewrite Hlen2. auto. }
+    auto.
+  }
+  intros i Hi.
+  assert (length l1 >= off + ty_size sub_ty).
+  { rewrite Hlen1. auto. }
+
+  assert (i < ty_size sub_ty) as Hi2. {
+    rewrite (subslice_length H) in Hi.
+    auto.
+  }
+  rewrite subslice_nth. { auto. } { rewrite Hlen1. auto. }
+  rewrite subslice_nth. { auto. } { rewrite Hlen2. auto. }
+  apply le_nth_rev; auto.
+  apply le_abstract_byte_refl.
+}
+assert (Props sub_ty) as Hsubprops. { inversion Hprops. auto. }
+
+pose proof PR_MONO2 _ Hsubprops _ _ H.
+rewrite E1 in H0.
+destruct (decode sub_ty (subslice_with_length l2 off (ty_size sub_ty))); cycle 1. { contradiction. }
+exists v. split. { auto. }
+auto.
+Qed.
 
 Lemma tuple_props : Props t.
 Proof.
