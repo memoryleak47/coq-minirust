@@ -734,7 +734,137 @@ auto.
 Qed.
 
 Lemma tuple_mono1 : mono1 t.
-Admitted.
+intros v1 v2 Hle [l1 Hdec1] [l2 Hdec2].
+destruct (tuple_dec Hdec1) as (Hlen1 & vals1 & Htr1 & -> & l1' & Henc1 & Hlen1').
+destruct (tuple_dec Hdec2) as (Hlen2 & vals2 & Htr2 & -> & l2' & Henc2 & Hlen2').
+exists l1', l2'.
+split. { auto. }
+split. { auto. }
+
+apply (le_nth Uninit). { lia. }
+intros i Hi.
+
+assert (length vals1 = length fields) as Hvals_len1. {
+  apply transpose_len in Htr1.
+  rewrite map_length in Htr1.
+  auto.
+}
+
+assert (length vals2 = length fields) as Hvals_len2. {
+  apply transpose_len in Htr2.
+  rewrite map_length in Htr2.
+  auto.
+}
+
+assert (encode_tuple_fields (repeat Uninit size) fields encode vals1 = Some l1') as Henc1'. {
+  unfold encode in Henc1. fold encode in Henc1. unfold encode_tuple in Henc1.
+  simpl in Henc1.
+  unfold assuming in Henc1.
+  rewrite Hvals_len1 in Henc1.
+  rewrite (Nat.eqb_refl (length fields)) in Henc1.
+  simpl in Henc1.
+  auto.
+}
+
+assert (encode_tuple_fields (repeat Uninit size) fields encode vals2 = Some l2') as Henc2'. {
+  unfold encode in Henc2. fold encode in Henc2. unfold encode_tuple in Henc2.
+  simpl in Henc2.
+  unfold assuming in Henc2.
+  rewrite Hvals_len2 in Henc2.
+  rewrite (Nat.eqb_refl (length fields)) in Henc2.
+  simpl in Henc2.
+  auto.
+}
+
+destruct (existsb (contains i) (map interval_of_field fields)) eqn:Hex; cycle 1. {
+  rewrite (encode_nth_miss Hex _ Hvals_len1 Henc1').
+  { rewrite <- Hlen1'. auto. }
+  simpl.
+  auto.
+}
+
+destruct (proj1 (existsb_exists _ _) Hex) as (interval & Hin & Hcont).
+destruct (In_nth _ _ (0,0) Hin) as [j [Hj Hnth]].
+rewrite map_length in Hj.
+
+destruct (nth j fields (0, TBool)) as [off sub_ty] eqn:Hdestr.
+
+assert (interval = (off, ty_size sub_ty)) as ->. {
+  rewrite (map_nth_switchd (0, TBool)) in Hnth; auto.
+  rewrite Hdestr in Hnth.
+  auto.
+}
+
+assert (contains i (interval_of_field (nth j fields (0, TBool))) = true) as Hcont'. {
+  rewrite Hdestr.
+  auto.
+}
+
+pose proof encode_nth_hit (VBool true) Hj Hvals_len1 Henc1' Hcont' as F1.
+rewrite Hdestr in F1.
+destruct F1 as (subl1 & Hsubenc1 & ->).
+
+pose proof encode_nth_hit (VBool true) Hj Hvals_len2 Henc2' Hcont' as F2.
+rewrite Hdestr in F2.
+destruct F2 as (subl2 & Hsubenc2 & ->).
+
+apply le_nth_rev. { apply le_abstract_byte_refl. }
+
+assert (Props sub_ty) as Hsubprops. {
+  pose proof props_fields as Hprops.
+  pose proof (proj1 (Forall_nth _ _) Hprops) as Hprops_nth.
+  assert (j < length (map snd fields)). { rewrite map_length. auto. }
+  pose proof (Hprops_nth j TBool H).
+  rewrite (map_nth_switchd (0,TBool)) in H0.
+  rewrite map_length in H; auto.
+  rewrite Hdestr in H0.
+  auto.
+}
+
+assert (decode sub_ty (subslice_with_length l1 off (ty_size sub_ty)) = Some (nth j vals1 (VBool true))) as Hdec1_. {
+  assert (j < length (map (decode_tuple_field decode l1) fields)). { rewrite map_length. auto. }
+  pose proof transpose_nth Htr1 (VBool true) j H.
+  rewrite (map_nth_switchd (0, TBool)) in H0; auto.
+  unfold decode_tuple_field in H0.
+  rewrite Hdestr in H0.
+  auto.
+}
+
+assert (is_valid_for sub_ty (nth j vals1 (VBool true))) as Hval1. {
+  exists (subslice_with_length l1 off (ty_size sub_ty)).
+  auto.
+}
+
+assert (decode sub_ty (subslice_with_length l2 off (ty_size sub_ty)) = Some (nth j vals2 (VBool true))) as Hdec2_. {
+  assert (j < length (map (decode_tuple_field decode l2) fields)). { rewrite map_length. auto. }
+  pose proof transpose_nth Htr2 (VBool true) j H.
+  rewrite (map_nth_switchd (0, TBool)) in H0; auto.
+  unfold decode_tuple_field in H0.
+  rewrite Hdestr in H0.
+  auto.
+}
+
+assert (is_valid_for sub_ty (nth j vals2 (VBool true))) as Hval2. {
+  exists (subslice_with_length l2 off (ty_size sub_ty)).
+  auto.
+}
+
+assert (le (nth j vals1 (VBool true)) (nth j vals2 (VBool true))) as Hle_vs. {
+  assert (le vals1 vals2). { auto. }
+  assert (length vals1 = length vals2). { apply (le_len H). }
+  assert (j < length vals1). { rewrite Hvals_len1. auto. }
+  refine (@le_nth_rev _ j _ _ _ (VBool true) _ H).
+  apply le_val_refl.
+}
+
+remember (nth j vals1 (VBool true)) as v1.
+remember (nth j vals2 (VBool true)) as v2.
+
+destruct (PR_MONO1 _ Hsubprops v1 v2 Hle_vs Hval1 Hval2) as (ll1 & ll2 & He1 & He2 & Hle').
+assert (subl1 = ll1) as -> . { rewrite He1 in Hsubenc1. inversion Hsubenc1. auto. }
+assert (subl2 = ll2) as -> . { rewrite He2 in Hsubenc2. inversion Hsubenc2. auto. }
+auto.
+Qed.
 
 Lemma tuple_mono2 : mono2 t.
 Admitted.
