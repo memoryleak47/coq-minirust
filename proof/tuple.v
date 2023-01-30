@@ -58,6 +58,7 @@ apply IHf.
 { inversion H. auto. }
 Qed.
 
+
 Lemma dec_to_enc {vals l} a
 (Hl: length l = size)
 (Ha: length a = size)
@@ -629,6 +630,12 @@ split. { auto. }
 apply (le_nth Uninit). { lia. } 
 intros i Hi.
 
+pose proof fields_fit_size_l as Hfit.
+pose proof (proj1 (Forall_nth _ _) Hfit) as Hfit_nth.
+
+pose proof props_fields as Hprops.
+pose proof (proj1 (Forall_nth _ _) Hprops) as Hprops_nth.
+
 assert (length vals = length fields) as Hvals_len. {
   pose proof transpose_len Htr.
   rewrite <- H.
@@ -649,7 +656,82 @@ destruct (existsb (contains i) (map interval_of_field fields)) eqn:Hex; cycle 1.
   auto.
 }
 
-Admitted.
+destruct (proj1 (existsb_exists _ _) Hex) as (interval & Hin & Hcont).
+destruct (In_nth _ _ (0,0) Hin) as [j [Hj Hnth]].
+rewrite map_length in Hj.
+
+unfold encode in Henc. fold encode in Henc. unfold encode_tuple in Henc.
+simpl in Henc.
+unfold assuming in Henc.
+rewrite Hvals_len in Henc.
+rewrite (Nat.eqb_refl (length fields)) in Henc.
+simpl in Henc.
+
+destruct (nth j fields (0, TBool)) as [off sub_ty] eqn:Hdestr.
+
+assert (off + ty_size sub_ty <= size) as Hfitsub. {
+  pose proof Hfit_nth j (0, TBool) Hj.
+  rewrite Hdestr in H.
+  simpl in H.
+  auto.
+}
+
+assert (interval = (off, ty_size sub_ty)) as ->. {
+  rewrite (map_nth_switchd (0, TBool)) in Hnth; auto.
+  rewrite Hdestr in Hnth.
+  auto.
+}
+
+assert (contains i (interval_of_field (nth j fields (0, TBool))) = true) as Hcont'. {
+  rewrite <- Hcont.
+  f_equal.
+  rewrite Hdestr.
+  auto.
+}
+
+assert (off <= i /\ i < off + ty_size sub_ty) as [Ho1 Ho2]. {
+  unfold contains in Hcont.
+  simpl in Hcont.
+  destruct (andb_prop _ _ Hcont) as [A B].
+  split.
+  { destruct (Nat.leb_spec off i); lia. }
+  { destruct (Nat.ltb_spec i (off + ty_size sub_ty)); lia. }
+}
+
+pose proof (encode_nth_hit (VBool true) Hj Hvals_len Henc Hcont') as F.
+rewrite Hdestr in F.
+destruct F as (subl & Hsubenc & ->).
+
+assert (j < length (map (decode_tuple_field decode l) fields)) as H''.
+{ rewrite map_length. auto. }
+pose proof (transpose_nth Htr (VBool true) j H'').
+rewrite (map_nth_switchd (0,TBool) Hj) in H.
+unfold decode_tuple_field in H.
+rewrite Hdestr in H.
+simpl in H.
+replace (nth i l Uninit) with (nth (i-off+off) l Uninit); cycle 1.
+{ f_equal. lia. }
+
+rewrite <- (@subslice_nth _ off (ty_size sub_ty) (i-off) l Uninit); try lia.
+apply le_nth_rev. { apply le_abstract_byte_refl. }
+remember (nth j vals (VBool true)) as v.
+assert (Props sub_ty) as Hsubprops. {
+  assert (j < length (map snd fields)) as H'. { rewrite map_length. auto. }
+  pose proof (Hprops_nth j TBool H').
+  rewrite (map_nth_switchd (0,TBool)) in H0; auto.
+  rewrite Hdestr in H0.
+  auto.
+}
+
+destruct (PR_RT2 _ Hsubprops _ _ H) as (ll & B & C).
+assert (subl = ll) as ->. {
+  rewrite B in Hsubenc.
+  inversion Hsubenc.
+  auto.
+}
+
+auto.
+Qed.
 
 Lemma tuple_mono1 : mono1 t.
 Admitted.
