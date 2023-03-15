@@ -10,7 +10,7 @@ Definition Size := nat.
 Definition Align := nat.
 
 (* This is a `Class` and no `Record` so that arguments are resolved automatically *)
-Class Params := {
+Class Memory := {
   PTR_SIZE : Size;
   ENDIANNESS : Endianness;
   P : Type; (* provenance *)
@@ -21,7 +21,7 @@ Class Params := {
 
 Section ty.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Definition Int := Z.
 

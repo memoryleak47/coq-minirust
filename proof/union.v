@@ -6,7 +6,7 @@ Import ListNotations.
 
 Section union.
 
-Context {params: Params}.
+Context {memory: Memory}.
 Context {fields: Fields}.
 Context {chunks: Chunks}.
 Context {size: Size}.

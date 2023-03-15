@@ -4,7 +4,7 @@ Import ListNotations.
 
 Section le.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Inductive LeAbstractByte : AbstractByte -> AbstractByte -> Type :=
   | LUninit b : LeAbstractByte Uninit b

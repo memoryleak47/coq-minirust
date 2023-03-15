@@ -5,7 +5,7 @@ Import ListNotations.
 
 Section props.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Lemma gen_props (ty: Ty) : wf ty -> Props ty.
 Proof.

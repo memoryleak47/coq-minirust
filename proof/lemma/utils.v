@@ -110,7 +110,7 @@ Qed.
 
 Section utils.
 
-Context {params:Params}.
+Context {memory: Memory}.
 
 Lemma transpose_le_step [o1 o2: option (list Value)] [v1 v2]
   (Hle1: le o1 o2)

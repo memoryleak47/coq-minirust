@@ -5,7 +5,7 @@ From Minirust.def Require Import ty int_encoding utils.
 
 Section encoding.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Definition Encoder := Ty -> Value -> option (list AbstractByte).
 Definition Decoder := Ty -> list AbstractByte -> option Value.

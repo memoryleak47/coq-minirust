@@ -4,7 +4,7 @@ Import ListNotations.
 
 Lemma ptr_size_gt0 : 8 > 0. lia. Qed.
 
-Local Instance TestParams : Params := {
+Local Instance TestMemory : Memory := {
   PTR_SIZE := 8;
   ENDIANNESS := BigEndian;
   P := nat;

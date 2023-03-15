@@ -2,7 +2,7 @@ From Minirust.def Require Import ty encoding utils thm wf.
 
 Section defs.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Definition canonicalize ty l := decode ty l >>= encode ty.
 

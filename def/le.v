@@ -5,7 +5,7 @@ From Minirust.def Require Import ty.
 
 Section le.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Class DefinedRelation (T : Type) := {
   le : T -> T -> Prop

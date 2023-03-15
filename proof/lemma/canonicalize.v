@@ -7,7 +7,7 @@ From Minirust.proof.lemma Require Import utils.
 
 Section canonicalize.
 
-Context {params: Params}.
+Context {memory: Memory}.
 Context [ty: Ty].
 Context (ty_props: Props ty).
 

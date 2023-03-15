@@ -4,7 +4,7 @@ From Minirust.def Require Import ty int_encoding.
 
 Section wf.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Definition valid_size (size: Size) : Prop := (int_in_range (Z.of_nat size) PTR_SIZE Signed) = true.
 

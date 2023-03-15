@@ -7,7 +7,7 @@ From Minirust.proof Require Import defs high int.
 
 Section ptr.
 
-Context {params: Params}.
+Context {memory: Memory}.
 Context [layout: Layout].
 
 Notation align := (

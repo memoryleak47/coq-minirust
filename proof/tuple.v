@@ -6,7 +6,7 @@ Import ListNotations.
 
 Section tuple.
 
-Context {params: Params}.
+Context {memory: Memory}.
 Context {fields: Fields}.
 Context {size: Size}.
 

@@ -4,7 +4,7 @@ From Minirust.proof.int_raw Require Import mid.
 
 Section high.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 (* roundtrip properties *)
 

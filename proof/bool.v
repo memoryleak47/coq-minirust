@@ -6,7 +6,7 @@ From Minirust.proof Require Import defs lemma.le.
 
 Section bool.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Inductive BoolCases1 : list AbstractByte -> Type :=
   | BC1True (p: option P) : BoolCases1 [Init x01 p]

@@ -5,7 +5,7 @@ From Minirust.def Require Import ty utils.
 
 Section int_encoding.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 (* fundamentals *)
 

@@ -5,7 +5,7 @@ From Minirust.proof.lemma Require Import utils subslice.
 
 Section chunks.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Lemma chunks_step {s c T} {l: list T}: chunks (S c) s l = (firstn s l)::(chunks c s (skipn s l)).
 Proof.

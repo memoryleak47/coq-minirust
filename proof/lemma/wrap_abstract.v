@@ -5,7 +5,7 @@ From Minirust.proof.lemma Require Import le.
 
 Section wrap_abstract.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Lemma unwrap_le bl l :
   unwrap_abstract l = Some bl ->

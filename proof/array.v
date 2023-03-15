@@ -7,7 +7,7 @@ From Minirust.proof.lemma Require Import le utils canonicalize chunks.
 
 Section array.
 
-Context {params: Params}.
+Context {memory: Memory}.
 Context [elem_ty: Ty].
 Context [count: Int].
 
@@ -294,7 +294,7 @@ apply Forall_cons. {
              (map (canonicalize elem_ty) lc))) eqn:F; cycle 1. { discriminate Htr_enc. }
   simpl in Htr_enc. inversion Htr_enc.
   rewrite <- H0.
-  apply (@canonicalize_le params elem_ty elem_props _ _ E).
+  apply (@canonicalize_le memory elem_ty elem_props _ _ E).
 }
 
 apply IH.

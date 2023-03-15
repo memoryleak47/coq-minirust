@@ -5,7 +5,7 @@ From Minirust.proof.lemma Require Import le wrap_abstract.
 
 Section unique_prov.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Lemma unique_prov_cons2 {a} {b} {l} {p} (H: unique_prov (a :: b :: l) = Some p) :
   unique_prov (b :: l) = Some p.

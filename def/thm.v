@@ -2,7 +2,7 @@ From Minirust.def Require Import ty encoding le wf.
 
 Section thm.
 
-Context {params: Params}.
+Context {memory: Memory}.
 
 Definition mono1 (ty: Ty) :=
   forall (v1 v2: Value),
